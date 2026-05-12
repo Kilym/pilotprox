@@ -1,0 +1,1462 @@
+<!DOCTYPE html>
+<html lang="pl">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>Pilot DJ'a - Karaoke</title>
+    <!-- FIREBASE SDK -->
+    <script src="https://www.gstatic.com/firebasejs/9.17.1/firebase-app-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/9.17.1/firebase-database-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/9.17.1/firebase-auth-compat.js"></script>
+    <style>
+        body {
+            font-family: 'Segoe UI', sans-serif;
+            background: #000000;
+            color: #ffffff;
+            margin: 0;
+            padding: 0;
+            user-select: none;
+            display: flex;
+            flex-direction: column;
+            height: 100dvh;
+            box-sizing: border-box;
+            overflow: hidden;
+        }
+
+        /* EKRAN LOGOWANIA */
+        #loginScreen {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: #121212;
+            z-index: 100000;
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+        }
+
+        .login-box {
+            background: #1a1a1a;
+            padding: 30px;
+            border-radius: 12px;
+            box-shadow: 0 10px 30px rgba(0, 0, 0, 0.8);
+            border: 1px solid #333;
+            text-align: center;
+            width: 90%;
+            max-width: 350px;
+        }
+
+        .login-box h2 {
+            color: #bb86fc;
+            margin-top: 0;
+            margin-bottom: 20px;
+        }
+
+        .login-box input {
+            width: 100%;
+            padding: 15px;
+            background: #2c2c2c;
+            border: 2px solid #444;
+            color: #fff;
+            border-radius: 8px;
+            font-size: 16px;
+            box-sizing: border-box;
+            text-align: center;
+            margin-bottom: 15px;
+            outline: none;
+        }
+
+        .login-box input:focus {
+            border-color: #bb86fc;
+        }
+
+        .login-box button {
+            width: 100%;
+            padding: 15px;
+            background: #bb86fc;
+            color: #000;
+            font-weight: bold;
+            font-size: 18px;
+            border: none;
+            border-radius: 8px;
+            cursor: pointer;
+            transition: 0.2s;
+            margin-top: 10px;
+        }
+
+        .login-box button:active {
+            background: #9965f4;
+            transform: scale(0.95);
+        }
+
+        .login-box button:disabled {
+            opacity: 0.5;
+            cursor: not-allowed;
+        }
+
+        /* GÓRNY PASEK ZAKŁADEK */
+        .top-bar {
+            display: flex;
+            justify-content: space-between;
+            padding: 10px;
+            background: #111;
+            border-bottom: 1px solid #333;
+            padding-top: max(10px, env(safe-area-inset-top));
+        }
+
+        .top-btn {
+            background: #222;
+            color: #ccc;
+            border: 1px solid #444;
+            border-radius: 10px;
+            padding: 15px 5px;
+            font-size: 20px;
+            flex: 1;
+            margin: 0 4px;
+            cursor: pointer;
+            transition: 0.2s;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+        }
+
+        .top-btn.active {
+            background: #4CAF50;
+            border-color: #4CAF50;
+        }
+
+        .logout-btn {
+            background: #b71c1c;
+            border-color: #b71c1c;
+            max-width: 45px;
+        }
+
+        /* ROZWIJANE PANELE */
+        .panel {
+            background: #1a1a1a;
+            padding: 15px;
+            margin: 10px;
+            border-radius: 12px;
+            box-shadow: 0 4px 10px rgba(0, 0, 0, 0.5);
+            display: none;
+        }
+
+        .status-display {
+            flex: 1;
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+            text-align: center;
+            padding: 10px;
+            overflow: hidden;
+            transition: all 0.3s ease;
+            touch-action: pan-y;
+        }
+
+        .mode-label {
+            color: #bb86fc;
+            font-size: 4vw;
+            text-transform: uppercase;
+            letter-spacing: 2px;
+            margin-bottom: 10px;
+        }
+
+        .big-number {
+            font-size: 35vw;
+            font-weight: 900;
+            line-height: 1;
+            color: #4CAF50;
+            margin: 0;
+            text-shadow: 0 0 30px rgba(76, 175, 80, 0.4);
+        }
+
+        .huge-title {
+            font-size: 10vw;
+            font-weight: bold;
+            margin: 5px 0;
+            color: #ffffff;
+            line-height: 1.1;
+            word-wrap: break-word;
+            width: 100%;
+            pointer-events: none;
+        }
+
+        .label-small {
+            color: #888;
+            font-size: 3.5vw;
+            text-transform: uppercase;
+            margin-top: 10px;
+            font-weight: bold;
+        }
+
+        .next-song {
+            font-size: 6vw;
+            color: #03dac6;
+            margin-top: 2px;
+            font-weight: bold;
+            pointer-events: none;
+        }
+
+        .queue-item {
+            font-size: 4.5vw;
+            color: #777;
+            margin-top: 2px;
+        }
+
+        /* KONTROLKI */
+        .controls-grid {
+            display: grid;
+            grid-template-columns: repeat(3, 1fr);
+            gap: 10px;
+            margin-bottom: 10px;
+        }
+
+        .btn {
+            background: #333;
+            border: none;
+            color: white;
+            padding: 15px 0;
+            border-radius: 12px;
+            font-size: 26px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            transition: 0.1s;
+            cursor: pointer;
+        }
+
+        .btn-play {
+            background: #455a64;
+            font-size: 34px;
+        }
+
+        .btn.pressed {
+            background: #e53935 !important;
+            transform: scale(0.95);
+        }
+
+        .btn:disabled {
+            opacity: 0.4;
+            pointer-events: none;
+        }
+
+        .sfx-btn {
+            padding: 12px 0;
+            font-size: 20px;
+            flex: 1;
+            margin: 0 3px;
+            background: #444;
+            border-radius: 8px;
+        }
+
+        /* LISTY I KARTY */
+        .clickable-item {
+            background: #2c2c2c;
+            margin-bottom: 8px;
+            padding: 15px;
+            border-radius: 10px;
+            transition: background 0.2s, transform 0.1s;
+        }
+
+        .clickable-item.interactive:active {
+            transform: scale(0.98);
+            background: #444;
+        }
+
+        .order-title {
+            font-size: 16px;
+            font-weight: bold;
+            line-height: 1.3;
+            margin-bottom: 4px;
+        }
+
+        .order-singer {
+            color: #aaa;
+            font-size: 13px;
+            display: block;
+        }
+
+        .badge {
+            color: #fff;
+            padding: 3px 8px;
+            border-radius: 6px;
+            font-size: 12px;
+            margin-right: 8px;
+            vertical-align: middle;
+            font-weight: bold;
+        }
+
+        .badge-yt {
+            background: #c62828;
+        }
+
+        .badge-ising {
+            background: #0288d1;
+        }
+
+        .tiny-btn {
+            background: #444;
+            border: none;
+            color: white;
+            padding: 6px 10px;
+            border-radius: 4px;
+            font-size: 14px;
+            cursor: pointer;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+        }
+
+        .tiny-btn:disabled {
+            opacity: 0.2;
+            pointer-events: none;
+        }
+
+        /* PRZYCISKI W SIATCE DŹWIĘKÓW */
+        .sound-grid-btn {
+            background: #2a2a2a;
+            color: #fff;
+            border: 1px solid #444;
+            border-radius: 6px;
+            padding: 8px 2px;
+            font-size: 10px;
+            line-height: 1.1;
+            font-weight: bold;
+            cursor: pointer;
+            transition: 0.1s;
+            text-align: center;
+            word-break: break-word;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            box-shadow: 0 2px 4px rgba(0, 0, 0, 0.3);
+        }
+
+        .sound-grid-btn:active {
+            background: #03dac6;
+            color: #000;
+            transform: scale(0.95);
+        }
+
+        .sound-grid-btn.playing {
+            background: #03dac6;
+            color: #000;
+            border-color: #00b3a6;
+        }
+
+        /* MODALE */
+        .modal-box {
+            background: #1a1a1a;
+            width: 100%;
+            max-width: 450px;
+            border-radius: 12px;
+            box-shadow: 0 10px 30px rgba(0, 0, 0, 0.5);
+            display: flex;
+            flex-direction: column;
+            max-height: 85dvh;
+            overflow: hidden;
+        }
+
+        .modal-scroll-area {
+            flex: 1;
+            overflow-y: auto;
+            padding: 15px;
+        }
+    </style>
+</head>
+
+<body>
+
+    <!-- EKRAN LOGOWANIA -->
+    <div id="loginScreen">
+        <div class="login-box">
+            <h2>Pilot DJ'a</h2>
+            <input type="email" id="djEmailInput" placeholder="E-mail DJ-a" autocomplete="username">
+            <input type="password" id="djPasswordInput" placeholder="Hasło" autocomplete="current-password">
+            <button id="loginBtn" onclick="loginDJ()">Zaloguj się</button>
+            <div id="loginError" style="color: #ff5252; margin-top: 15px; font-size: 14px; display: none;">Błędny e-mail
+                lub hasło!</div>
+        </div>
+    </div>
+
+    <!-- RESZTA PILOTA -->
+    <div id="appInterface" style="display: none; flex-direction: column; height: 100%;">
+        <div id="topBar" class="top-bar">
+            <button id="btnTabOrders" class="top-btn" onclick="toggleTab('orders')" title="Zamówienia">📦</button>
+            <button id="btnTabSearch" class="top-btn" onclick="toggleTab('search')" title="Wyszukiwarka">🔍</button>
+            <button id="btnTabList" class="top-btn" onclick="toggleTab('list')" title="Otwarte Karty">📑</button>
+            <button id="btnTabHistory" class="top-btn" onclick="toggleTab('history')" title="Historia">📖</button>
+            <button id="btnTabControls" class="top-btn" onclick="toggleTab('controls')" title="Sterowanie">🎛️</button>
+            <button class="top-btn logout-btn" onclick="logoutDJ()" title="Wyloguj się">🚪</button>
+        </div>
+
+        <!-- Wskaźnik statusu poniżej górnego paska -->
+        <div style="position: relative; width: 100%; height: 0;">
+            <div id="connectionStatusDot" title="Sprawdzanie połączenia..."
+                style="position: absolute; top: 8px; right: 15px; width: 12px; height: 12px; border-radius: 50%; background: #f44336; box-shadow: 0 0 8px #f44336; transition: 0.3s; z-index: 10;">
+            </div>
+        </div>
+
+        <div id="tabOrders" class="panel" style="max-height: 60dvh; overflow-y: auto;">
+            <div id="ordersListRemote" style="text-align: left;">
+                <div style="text-align: center; color: #aaa; padding: 20px;">⏳ Czekam na zamówienia...</div>
+            </div>
+        </div>
+
+        <div id="tabSearch" class="panel">
+            <div style="position: relative; margin-bottom: 5px;">
+                <input type="text" id="searchInputRemote" placeholder="Szukaj w bazie..."
+                    style="width: 100%; padding: 15px; padding-right: 40px; font-size: 18px; border-radius: 8px; border: none; box-sizing: border-box;"
+                    oninput="handleLocalSearch(this.value)">
+                <span id="clearSearchBtn"
+                    style="position: absolute; right: 10px; top: 12px; font-size: 24px; color: #888; cursor: pointer; display: none;"
+                    onclick="clearSearch()">✖</span>
+            </div>
+            <div id="searchStatus" style="font-size: 13px; color: #888; margin-bottom: 15px; text-align: center;">⏳
+                Pobieranie bazy utworów...</div>
+            <ul id="searchListRemote"
+                style="list-style: none; padding: 0; margin: 0; max-height: 50dvh; overflow-y: auto;"></ul>
+        </div>
+
+        <div id="tabList" class="panel" style="max-height: 60dvh; overflow-y: auto;">
+            <div id="openTabsContainer" style="text-align: left;">
+                <div style="text-align: center; color: #aaa; padding: 20px;">⏳ Oczekiwanie na dane z przeglądarki...
+                </div>
+            </div>
+        </div>
+
+        <!-- ZAKŁADKA HISTORII -->
+        <div id="tabHistory" class="panel" style="max-height: 60dvh; overflow-y: auto;">
+            <div id="historyListRemote" style="text-align: left;">
+                <div style="text-align: center; color: #aaa; padding: 20px;">⏳ Czekam na historię...</div>
+            </div>
+        </div>
+
+        <div id="tabControls" class="panel" style="max-height: 60dvh; overflow-y: auto;">
+            <div class="controls-grid">
+                <button id="btnPrev" class="btn" onclick="sendCmd('prev')">⏮️</button>
+                <button id="btnPlay" class="btn btn-play" onclick="sendCmd('play')">▶️</button>
+                <button id="btnNext" class="btn" onclick="sendCmd('next')">⏭️</button>
+            </div>
+
+            <div style="display: flex; gap: 10px; margin-bottom: 10px;">
+                <button class="btn" style="flex: 1.2; font-size: 16px; padding: 12px; background: #b71c1c;"
+                    onclick="sendCmd('close')">❌ Zamknij Kartę</button>
+                <label
+                    style="flex: 1; background: #222; border-radius: 12px; display: flex; align-items: center; justify-content: center; font-size: 16px; font-weight: bold; gap: 10px; cursor: pointer;">
+                    <input type="checkbox" id="autoPlayToggle" style="transform: scale(1.6);"
+                        onchange="sendCmd('toggle_autoplay', this.checked)">
+                    AutoPlay
+                </label>
+            </div>
+
+            <div
+                style="display: flex; justify-content: space-between; background: #222; padding: 8px; border-radius: 12px;">
+                <button class="btn sfx-btn" onclick="sendCmd('sfx', 'Intro')" title="Intro">🎵</button>
+                <button class="btn sfx-btn" onclick="sendCmd('sfx', 'Outro')" title="Outro">🏁</button>
+                <button class="btn sfx-btn" onclick="sendCmd('sfx', 'Outro2')" title="Outro 2">🎬</button>
+                <button class="btn sfx-btn" onclick="sendCmd('sfx', 'Brawa')" title="Brawa">👏</button>
+                <button class="btn sfx-btn" onclick="sendCmd('sfx', 'Aplauz')" title="Aplauz">📣</button>
+                <button class="btn sfx-btn" onclick="sendCmd('sfx', 'Dzwonek')" title="Dzwonek">🔔</button>
+                <button class="btn sfx-btn" onclick="sendCmd('sfx', 'Błąd')" title="Błąd">❌</button>
+            </div>
+
+            <button id="btnMic" onclick="toggleMic()"
+                style="background:#ff9800; color:white; border:none; padding:15px; border-radius:12px; font-weight:bold; width:100%; margin-top:10px;">
+                🎙️ WŁĄCZ MIKROFON (TALKBACK)
+            </button>
+        </div>
+
+        <div class="status-display" id="mainStatusScreen">
+            <div id="uiMode" class="mode-label">Inicjalizacja...</div>
+            <div id="uiMainDisplay" class="big-number">-</div>
+            <div id="uiSubDisplay" class="huge-title">Czekam na dane</div>
+
+            <div id="nextKaraokeContainer">
+                <div class="label-small">Następnie:</div>
+                <div id="uiNext" class="next-song">-</div>
+                <div class="label-small">W kolejce:</div>
+                <div id="uiQueue" style="margin-top:5px;"></div>
+            </div>
+
+            <div id="nextKonkursContainer"
+                style="margin-top: 20px; border-top: 1px solid #333; width: 100%; padding-top: 10px;">
+                <div class="label-small">Następny w kolejce:</div>
+                <div style="display: flex; align-items: center; justify-content: center; gap: 15px; margin-top: 5px;">
+                    <span id="uiNextIdx" style="font-size: 10vw; font-weight: 900; color: #fb8c00;">-</span>
+                    <span id="uiNextName" style="font-size: 6vw; color: #aaa; text-align: left; flex: 1;">-</span>
+                </div>
+            </div>
+
+            <div id="loteriaContainer" style="display: none; width: 100%; margin-top: 20px;">
+                <button class="btn"
+                    style="background: #9c27b0; font-weight: bold; width: 100%; padding: 15px; font-size: 18px; margin-bottom: 10px; box-shadow: 0 4px 15px rgba(156, 39, 176, 0.4); text-transform: uppercase;"
+                    onclick="sendCmd('open_lottery_window')">
+                    🖥️ Otwórz / Zamknij Ekran
+                </button>
+                <button class="btn"
+                    style="background: #3f51b5; font-weight: bold; width: 100%; padding: 15px; font-size: 18px; margin-bottom: 10px; box-shadow: 0 4px 15px rgba(63, 81, 181, 0.4); text-transform: uppercase;"
+                    onclick="sendCmd('show_lottery_screen')">
+                    📺 Wyślij na ekran (bez losowania)
+                </button>
+                <button class="btn"
+                    style="background: #e91e63; font-weight: bold; width: 100%; padding: 20px; font-size: 24px; box-shadow: 0 4px 15px rgba(233, 30, 99, 0.4); text-transform: uppercase;"
+                    onclick="sendCmd('start_lottery')">
+                    🎉 Losuj Zwycięzcę
+                </button>
+                <div class="label-small" style="margin-top: 25px; text-align: center; color: #bbb;">🏆 Ostatni
+                    Zwycięzcy:</div>
+                <ul id="winnersListRemote"
+                    style="list-style: none; padding: 0; margin-top: 10px; max-height: 35dvh; overflow-y: auto; text-align: left;">
+                    <li style="text-align: center; color: #777; padding: 10px;">Czekam na dane...</li>
+                </ul>
+            </div>
+        </div>
+
+        <!-- PRZYCISKI DOLNE (EKRAN / DŹWIĘKI) -->
+        <div style="position: fixed; bottom: 15px; left: 15px; right: 15px; display: flex; gap: 8px; z-index: 9999;">
+            <button onclick="document.getElementById('overlayModal').style.display='flex'"
+                style="flex:1.5; background: rgba(156, 39, 176, 0.85); border: 1px solid #7b1fa2; color: white; border-radius: 12px; padding: 10px; font-size: 14px; font-weight: bold; cursor: pointer; box-shadow: 0 4px 10px rgba(0,0,0,0.5);">
+                🪄 Ekran
+            </button>
+            <button onclick="document.getElementById('soundsModal').style.display='flex'"
+                style="flex:1.5; background: rgba(3, 218, 198, 0.85); border: 1px solid #00b3a6; color: black; border-radius: 12px; padding: 10px; font-size: 14px; font-weight: bold; cursor: pointer; box-shadow: 0 4px 10px rgba(0,0,0,0.5);">
+                🎵 Dźwięki
+            </button>
+            <button onclick="forceUnlockUI()" title="Odblokuj przyciski"
+                style="flex:1; background: rgba(34, 34, 34, 0.85); border: 1px solid #555; color: #ccc; border-radius: 12px; padding: 10px; font-size: 12px; font-weight: bold; cursor: pointer; box-shadow: 0 4px 10px rgba(0,0,0,0.5);">
+                🔄 Reset
+            </button>
+        </div>
+    </div> <!-- KONIEC APP INTERFACE -->
+
+    <!-- MODAL EKRANU -->
+    <div id="overlayModal"
+        style="display:none; position:fixed; top:0; left:0; width:100vw; height:100dvh; background:rgba(0,0,0,0.9); z-index:10000; flex-direction:column; align-items:center; justify-content:center; padding:15px; box-sizing:border-box;">
+        <div class="modal-box" style="border-color: #9c27b0;">
+            <div class="modal-scroll-area">
+                <div style="position: relative; margin-bottom: 5px; width: 100%;">
+                    <textarea id="ovText" placeholder="Napis (dowolny tekst)..."
+                        oninput="this.nextElementSibling.style.display = this.value.length > 0 ? 'block' : 'none'"
+                        style="width:100%; background:#2c2c2c; color:white; border:1px solid #444; border-radius:6px; padding:10px; padding-right:30px; box-sizing:border-box; height:40px; min-height:40px; font-family:inherit; font-size:14px; margin:0;"></textarea>
+                    <span
+                        onclick="const inp = document.getElementById('ovText'); inp.value=''; inp.focus(); this.style.display='none'; if(typeof autoFitWindow === 'function') autoFitWindow();"
+                        style="display: none; position: absolute; right: 10px; top: 10px; font-size: 16px; color: #888; cursor: pointer;">✖</span>
+                </div>
+                <div
+                    style="display: flex; gap: 15px; margin-bottom: 10px; align-items: center; background: #222; padding: 8px 12px; border-radius: 6px; border: 1px solid #444;">
+                    <label
+                        style="font-size: 12px; color: #ccc; display: flex; align-items: center; gap: 8px; cursor: pointer; flex: 1;">
+                        <input type="color" id="ovTextColor" value="#ffffff"
+                            style="width: 28px; height: 28px; padding: 0; border: none; border-radius: 4px; cursor: pointer; background: transparent;">
+                        Kolor
+                    </label>
+                    <label
+                        style="font-size: 12px; color: #ccc; display: flex; align-items: center; gap: 8px; cursor: pointer; border-left: 1px solid #555; padding-left: 15px; flex: 1;">
+                        <input type="checkbox" id="ovTextBlink" style="transform: scale(1.3);"> ✨ Miga
+                    </label>
+                </div>
+                <div style="display:flex; gap:5px; margin-bottom:5px;">
+                    <div style="position: relative; flex: 1;">
+                        <input type="text" id="gifSearchQuery" placeholder="Szukaj GIFa (po angielsku)..."
+                            oninput="this.nextElementSibling.style.display = this.value.length > 0 ? 'block' : 'none'"
+                            style="width:100%; background:#2c2c2c; color:white; border:1px solid #444; border-radius:6px; padding:8px; padding-right: 30px; box-sizing:border-box; font-size: 12px; margin:0;">
+                        <span
+                            onclick="const inp = document.getElementById('gifSearchQuery'); inp.value=''; inp.focus(); this.style.display='none';"
+                            style="display: none; position: absolute; right: 10px; top: 50%; transform: translateY(-50%); font-size: 16px; color: #888; cursor: pointer;">✖</span>
+                    </div>
+                    <button onclick="searchGifs()"
+                        style="background:#9c27b0; color:white; border:none; padding:8px 12px; border-radius:6px; cursor:pointer;">Szukaj</button>
+                </div>
+                <div id="gifResults"
+                    style="display:flex; gap:5px; overflow-x:auto; padding-bottom:5px; margin-bottom:5px; min-height: 60px;">
+                </div>
+                <div style="display:flex; align-items: center; gap: 5px; margin-bottom:15px;">
+                    <div style="position: relative; flex: 1;">
+                        <input type="text" id="ovImg" placeholder="Lub własny link do GIFa/Obrazka (https://...)"
+                            oninput="this.nextElementSibling.style.display = this.value.length > 0 ? 'block' : 'none'"
+                            style="width:100%; background:#2c2c2c; color:white; border:1px solid #444; border-radius:6px; padding:10px; padding-right:30px; box-sizing:border-box; font-size: 12px; margin:0;">
+                        <span
+                            onclick="const inp = document.getElementById('ovImg'); inp.value=''; inp.focus(); this.style.display='none'; if(typeof autoFitWindow === 'function') autoFitWindow();"
+                            style="display: none; position: absolute; right: 10px; top: 50%; transform: translateY(-50%); font-size: 16px; color: #888; cursor: pointer;">✖</span>
+                    </div>
+                    <label id="uploadImgBtn"
+                        style="background: #2196F3; color: white; padding: 10px; border-radius: 6px; cursor: pointer; font-size: 12px; font-weight: bold; text-align: center; white-space: nowrap;">
+                        <input type="file" id="imgUploadInput" accept="image/*" style="display: none;"
+                            onchange="uploadImageToImgBB(this.files[0])"> 📸 Wstaw z galerii
+                    </label>
+                </div>
+                <div
+                    style="background:#222; padding:12px; border-radius:8px; margin-bottom:15px; border: 1px solid #444;">
+                    <select id="tvWindowMode"
+                        onchange="document.getElementById('trackpadControls').style.display = this.value === 'window' ? 'block' : 'none';"
+                        style="width:100%; background:#1a1a1a; color:white; border:1px solid #555; border-radius:6px; padding:8px; margin-bottom:10px; font-weight:bold;">
+                        <option value="window">🖥️ Tryb: Małe okienko (suwaki)</option>
+                        <option value="fullscreen">🖥️ Tryb: Pełny Ekran</option>
+                    </select>
+                    <div id="trackpadControls">
+                        <select id="tvAspect"
+                            onchange="document.getElementById('posArea').style.aspectRatio = this.value;"
+                            style="width:100%; background:#1a1a1a; color:#aaa; border:1px solid #555; border-radius:6px; padding:6px; margin-bottom:15px; font-size: 12px;">
+                            <option value="16/9">📺 Proporcje TV: Panoramiczny (16:9)</option>
+                            <option value="4/3">📺 Proporcje TV: Kwadratowy (4:3)</option>
+                        </select>
+                        <div style="display:flex; gap:10px; margin-bottom:10px; align-items: flex-end;">
+                            <div style="flex:1;">
+                                <label style="font-size:10px; color:#aaa;">Szerokość: <span
+                                        id="wDisp">100%</span></label>
+                                <input type="range" id="winW" min="10" max="100" value="100"
+                                    oninput="updateWinPreview()" style="width:100%; accent-color:#bb86fc;">
+                            </div>
+                            <div style="flex:1;">
+                                <label style="font-size:10px; color:#aaa;">Wysokość: <span
+                                        id="hDisp">100%</span></label>
+                                <input type="range" id="winH" min="10" max="100" value="100"
+                                    oninput="updateWinPreview()" style="width:100%; accent-color:#bb86fc;">
+                            </div>
+                            <button onclick="autoFitWindow()" title="Dopasuj wysokość do proporcji treści"
+                                style="background:#bb86fc; color:#000; border:none; border-radius:6px; padding:0 12px; height: 32px; font-weight:bold; cursor:pointer;">📏
+                                Dopasuj</button>
+                        </div>
+                        <div id="posArea"
+                            style="width:100%; max-width:250px; aspect-ratio: 16/9; background:#000; border:1px solid #555; margin:10px auto; position:relative; overflow:hidden; cursor:crosshair; border-radius:4px;"
+                            onclick="setPos(event)">
+                            <div id="posBox"
+                                style="background:rgba(187, 134, 252, 0.4); border:1px solid #bb86fc; position:absolute; pointer-events:none; width:100%; height:100%; top:0; left:0;">
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                <div style="display:flex; flex-direction:column; gap:10px;">
+                    <div
+                        style="display:flex; flex-direction:column; gap:5px; background:#222; padding:10px; border-radius:8px;">
+                        <div style="display:flex; gap:8px; align-items:center;">
+                            <span style="flex:1; font-size:13px; color:#ddd; font-weight:bold;">📺 Ekran 2 (TV)</span>
+                            <button onclick="sendOverlay(true, 'tv')"
+                                style="background:#4CAF50; color:white; border:none; padding:8px 12px; border-radius:6px; font-weight:bold; cursor:pointer;">➕
+                                Nowe Okno</button>
+                        </div>
+                        <div id="dynamic-tv-buttons"
+                            style="display:flex; flex-direction:column; gap:5px; margin-top:5px;"></div>
+                    </div>
+                    <div
+                        style="display:flex; gap:8px; align-items:center; background:#222; padding:10px; border-radius:8px;">
+                        <span style="flex:1; font-size:13px; color:#ddd; font-weight:bold;">🖥️ Ekran 3 (Laptop)</span>
+                        <button onclick="sendOverlay(true, 'roboczy')"
+                            style="background:#4CAF50; color:white; border:none; padding:8px 12px; border-radius:6px; font-weight:bold; cursor:pointer;">👁️
+                            Pokaż</button>
+                        <button onclick="sendOverlay(false, 'roboczy')"
+                            style="background:#f44336; color:white; border:none; padding:8px 12px; border-radius:6px; font-weight:bold; cursor:pointer;">✖
+                            Ukryj</button>
+                    </div>
+                </div>
+            </div>
+            <div style="padding: 15px; border-top: 1px solid #333; background: #1a1a1a;">
+                <button onclick="document.getElementById('overlayModal').style.display='none'"
+                    style="width:100%; background:#333; color:#fff; font-weight:bold; border:none; padding:12px; border-radius: 8px; font-size:16px; cursor:pointer;">✖
+                    Zamknij panel ekranu</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- MODAL DŹWIĘKÓW -->
+    <div id="soundsModal"
+        style="display:none; position:fixed; top:0; left:0; width:100vw; height:100dvh; background:rgba(0,0,0,0.9); z-index:10000; flex-direction:column; align-items:center; justify-content:center; padding:15px; box-sizing:border-box;">
+        <div class="modal-box" style="border-color: #03dac6;">
+
+            <!-- NOWE: Przełącznik Celu Odtwarzania -->
+            <div style="padding: 15px 15px 0 15px; margin-bottom: -5px;">
+                <div
+                    style="display: flex; background: #222; border-radius: 8px; border: 1px solid #333; overflow: hidden;">
+                    <button id="targetExtBtn" onclick="setSoundTarget('ext')"
+                        style="flex: 1; padding: 10px; background: #03dac6; color: #000; border: none; font-weight: bold; cursor: pointer; transition: 0.2s;">💻
+                        Komputer</button>
+                    <button id="targetPhoneBtn" onclick="setSoundTarget('phone')"
+                        style="flex: 1; padding: 10px; background: transparent; color: #aaa; border: none; font-weight: bold; cursor: pointer; transition: 0.2s;">📱
+                        Telefon (Podgląd)</button>
+                </div>
+            </div>
+
+            <div style="padding: 15px 15px 0 15px;">
+                <div
+                    style="display: flex; align-items: center; gap: 10px; background: #222; padding: 10px; border-radius: 8px; border: 1px solid #333;">
+                    <span style="font-size: 18px;">🔈</span>
+                    <input type="range" id="volSlider" min="0" max="100" value="100"
+                        style="flex: 1; accent-color: #03dac6;" oninput="changeVolume(this.value)">
+                    <span style="font-size: 18px;">🔊</span>
+                </div>
+            </div>
+            <div class="modal-scroll-area">
+                <div id="soundsGrid"
+                    style="display: grid; grid-template-columns: repeat(5, 1fr); gap: 4px; margin-bottom: 20px;">
+                    <div style="grid-column: 1 / -1; text-align: center; color: #888; font-size: 12px; padding: 20px;">
+                        Pobieranie dźwięków z bazy...</div>
+                </div>
+                <hr style="border:0; border-top:1px solid #333; margin: 15px 0;">
+                <label style="font-size:12px; color:#03dac6; margin-bottom:10px; display:block; font-weight:bold;">➕
+                    DODAJ WŁASNY DŹWIĘK DO BAZY</label>
+                <div style="position: relative; margin-bottom: 8px;">
+                    <input type="text" id="newSoundTitle" placeholder="Krótka nazwa (np. Bęben)"
+                        oninput="this.nextElementSibling.style.display = this.value.length > 0 ? 'block' : 'none'"
+                        style="width:100%; background:#2c2c2c; color:white; border:1px solid #444; border-radius:6px; padding:10px; padding-right:30px; box-sizing:border-box; font-size:12px; margin:0;">
+                    <span
+                        onclick="const inp = document.getElementById('newSoundTitle'); inp.value=''; inp.focus(); this.style.display='none';"
+                        style="display: none; position: absolute; right: 10px; top: 50%; transform: translateY(-50%); font-size: 16px; color: #888; cursor: pointer;">✖</span>
+                </div>
+                <div style="position: relative; margin-bottom: 10px;">
+                    <input type="text" id="newSoundUrl" placeholder="Link (http... .mp3)"
+                        oninput="this.nextElementSibling.style.display = this.value.length > 0 ? 'block' : 'none'"
+                        style="width:100%; background:#2c2c2c; color:white; border:1px solid #444; border-radius:6px; padding:10px; padding-right:30px; box-sizing:border-box; font-size:12px; margin:0;">
+                    <span
+                        onclick="const inp = document.getElementById('newSoundUrl'); inp.value=''; inp.focus(); this.style.display='none';"
+                        style="display: none; position: absolute; right: 10px; top: 50%; transform: translateY(-50%); font-size: 16px; color: #888; cursor: pointer;">✖</span>
+                </div>
+                <button id="addSoundBtn" onclick="addNewSound()"
+                    style="width:100%; background:#333; color:white; border:1px solid #555; padding:10px; border-radius:6px; cursor:pointer; font-weight:bold;">Zapisz</button>
+            </div>
+            <div style="padding: 15px; border-top: 1px solid #333; background: #1a1a1a;">
+                <button onclick="document.getElementById('soundsModal').style.display='none'"
+                    style="width:100%; background:#333; color:#fff; font-weight:bold; border:none; padding:12px; border-radius: 8px; font-size:16px; cursor:pointer;">✖
+                    Zamknij panel</button>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // --- KONFIGURACJA FIREBASE ---
+        const firebaseConfig = {
+            apiKey: "AIzaSyA7Eam7DIBhHG05gBTNGWuFLs2W8eLfqUo",
+            authDomain: "indeksowe-karaoke.firebaseapp.com",
+            databaseURL: "https://indeksowe-karaoke-default-rtdb.europe-west1.firebasedatabase.app",
+            projectId: "indeksowe-karaoke",
+            storageBucket: "indeksowe-karaoke.firebasestorage.app",
+            messagingSenderId: "456394044590",
+            appId: "1:456394044590:web:1978e917b7674e7bd1293f"
+        };
+        firebase.initializeApp(firebaseConfig);
+        const db = firebase.database();
+        const auth = firebase.auth();
+
+        let appInitialized = false;
+
+        // Nasłuchiwanie zmian stanu logowania
+        auth.onAuthStateChanged((user) => {
+            if (user) {
+                document.getElementById('loginScreen').style.display = 'none';
+                document.getElementById('appInterface').style.display = 'flex';
+                if (!appInitialized) {
+                    initApp();
+                    appInitialized = true;
+                }
+            } else {
+                document.getElementById('loginScreen').style.display = 'flex';
+                document.getElementById('appInterface').style.display = 'none';
+                appInitialized = false;
+            }
+        });
+
+        async function loginDJ() {
+            const email = document.getElementById('djEmailInput').value.trim();
+            const pass = document.getElementById('djPasswordInput').value;
+            const errorDiv = document.getElementById('loginError');
+            const btn = document.getElementById('loginBtn');
+
+            if (!email || !pass) return;
+
+            btn.disabled = true;
+            btn.textContent = "Logowanie...";
+            errorDiv.style.display = "none";
+
+            try {
+                await auth.signInWithEmailAndPassword(email, pass);
+                btn.disabled = false;
+                btn.textContent = "Zaloguj się";
+            } catch (err) {
+                errorDiv.style.display = "block";
+                btn.disabled = false;
+                btn.textContent = "Zaloguj się";
+                console.error(err);
+            }
+        }
+
+        function logoutDJ() {
+            auth.signOut().then(() => {
+                location.reload();
+            });
+        }
+
+        // Zmienne i stan dźwięków
+        let soundTarget = 'ext'; // 'ext' (komputer) lub 'phone' (podgląd lokalny)
+        let localAudio = new Audio(); // Odtwarzacz dla telefonu
+        const savedVol = localStorage.getItem('sfx_vol');
+        if (savedVol !== null) {
+            document.getElementById('volSlider').value = savedVol * 100;
+            localAudio.volume = savedVol;
+        }
+
+        function setSoundTarget(target) {
+            if (target === soundTarget) return;
+
+            // Zatrzymaj obecne odtwarzanie przy przełączaniu, aby uniknąć chaosu
+            if (soundTarget === 'phone' && !localAudio.paused) {
+                localAudio.pause();
+                localAudio.currentTime = 0;
+            } else if (soundTarget === 'ext' && currentlyPlayingUrl) {
+                sendCmd('remote_audio', { action: 'stop', timestamp: Date.now() });
+            }
+            currentlyPlayingUrl = null;
+            document.querySelectorAll('.sound-grid-btn').forEach(b => b.classList.remove('playing'));
+
+            soundTarget = target;
+            const btnExt = document.getElementById('targetExtBtn');
+            const btnPhone = document.getElementById('targetPhoneBtn');
+
+            if (target === 'ext') {
+                btnExt.style.background = '#03dac6';
+                btnExt.style.color = '#000';
+                btnPhone.style.background = 'transparent';
+                btnPhone.style.color = '#aaa';
+            } else {
+                btnExt.style.background = 'transparent';
+                btnExt.style.color = '#aaa';
+                btnPhone.style.background = '#03dac6';
+                btnPhone.style.color = '#000';
+            }
+        }
+
+        function changeVolume(val) {
+            const vol = parseInt(val) / 100;
+            localStorage.setItem('sfx_vol', vol);
+            sendCmd('set_volume', vol);
+            localAudio.volume = vol; // Zmiana głośności również dla odtwarzacza lokalnego
+        }
+
+        let lastCmdTs = 0; let unlockTimeout = null; let isPlaying = false;
+        let waitingForSongChange = false; let lastSongName = ""; let currentModeInternal = "karaoke";
+        let localBaza = []; let relX = 0; let relY = 0; let gistSounds = []; let currentlyPlayingUrl = null;
+        let lastAckFromExt = 0; // Czas ostatniej odpowiedzi od rozszerzenia
+
+        // UI Elementy
+        const uiMode = document.getElementById('uiMode'); const uiMain = document.getElementById('uiMainDisplay');
+        const uiSub = document.getElementById('uiSubDisplay'); const uiNext = document.getElementById('uiNext');
+        const uiQueue = document.getElementById('uiQueue'); const nextKaraokeContainer = document.getElementById('nextKaraokeContainer');
+        const nextKonkursContainer = document.getElementById('nextKonkursContainer'); const loteriaContainer = document.getElementById('loteriaContainer');
+        const autoPlayToggle = document.getElementById('autoPlayToggle');
+
+        function toggleTab(tabName) {
+            const tabs = ['orders', 'search', 'list', 'history', 'controls'];
+            tabs.forEach(t => {
+                const el = document.getElementById('tab' + t.charAt(0).toUpperCase() + t.slice(1));
+                const btn = document.getElementById('btnTab' + t.charAt(0).toUpperCase() + t.slice(1));
+                if (t === tabName) {
+                    const isVisible = el.style.display === 'block';
+                    el.style.display = isVisible ? 'none' : 'block';
+                    if (btn) btn.classList.toggle('active', !isVisible);
+                } else {
+                    if (el) el.style.display = 'none';
+                    if (btn) btn.classList.remove('active');
+                }
+            });
+        }
+
+        // Gesty
+        const statusScreen = document.getElementById('mainStatusScreen');
+        let touchStartX = 0; let touchEndX = 0; const availableModes = ['karaoke', 'konkurs', 'loteria'];
+
+        statusScreen.addEventListener('touchstart', e => touchStartX = e.changedTouches[0].screenX, { passive: true });
+        statusScreen.addEventListener('touchend', e => { touchEndX = e.changedTouches[0].screenX; handleSwipe(); });
+
+        function handleSwipe() {
+            const threshold = 80;
+            let currentIndex = availableModes.indexOf(currentModeInternal);
+            if (currentIndex === -1) currentIndex = 0;
+
+            if (touchEndX < touchStartX - threshold) {
+                let nextMode = availableModes[(currentIndex + 1) % availableModes.length];
+                sendCmd('set_mode', nextMode); toggleTab('');
+            }
+            if (touchEndX > touchStartX + threshold) {
+                let prevMode = availableModes[(currentIndex - 1 + availableModes.length) % availableModes.length];
+                sendCmd('set_mode', prevMode); toggleTab('');
+            }
+        }
+
+        function initApp() {
+            // Nasłuchiwanie Bazy Utworów
+            db.ref('baza').once('value', snap => {
+                const data = snap.val();
+                if (data) localBaza = Array.isArray(data) ? data : Object.values(data);
+                document.getElementById('searchStatus').textContent = `✅ Baza załadowana (${localBaza.length} utworów)`;
+            });
+
+            // Nasłuchiwanie Dźwięków
+            db.ref('dzwieki').on('value', snap => {
+                const data = snap.val();
+                if (data) {
+                    gistSounds = Array.isArray(data) ? data : Object.values(data);
+                    renderSoundsGrid();
+                }
+            });
+
+            // Nasłuchiwanie Zamówień (Real-time z Firebase)
+            db.ref('zamowienia').on('value', snap => {
+                const data = snap.val() || {};
+                const list = document.getElementById('ordersListRemote');
+                const now = Date.now();
+                const eightHoursInMs = 8 * 60 * 60 * 1000;
+                let uniqueOrders = {};
+
+                Object.keys(data).forEach(key => {
+                    let o = data[key];
+                    o.id = key;
+                    if ((now - o.timestamp) <= eightHoursInMs) {
+                        let lowerTitle = o.tytul.toLowerCase().trim();
+                        if (!uniqueOrders[lowerTitle] || !o.zagrane) {
+                            uniqueOrders[lowerTitle] = o;
+                        }
+                    }
+                });
+
+                if (list) {
+                    list.innerHTML = '';
+                    let orderCount = 0;
+                    Object.values(uniqueOrders).forEach(o => {
+                        orderCount++;
+                        const card = document.createElement('div');
+                        card.className = 'clickable-item interactive';
+                        const isPlayed = o.zagrane === true;
+                        card.style.background = isPlayed ? '#fbc02d' : '#ffffff';
+                        card.style.border = isPlayed ? '2px solid #f57f17' : '2px solid #ccc';
+                        card.style.color = '#000000';
+                        const nat = o.narodowosc ? ` | 🌍 ${o.narodowosc}` : '';
+
+                        card.innerHTML = `
+                            <div class="order-title" style="color: #000; font-weight: 900;">${o.tytul}</div>
+                            <span class="order-singer" style="color: #444; font-weight: bold;">🎤 ${o.imie || 'Wybór własny'}${nat}</span>
+                        `;
+
+                        // Zapisanie stylów i HTML aby móc je przywrócić
+                        const originalHTML = card.innerHTML;
+                        const originalBg = card.style.background;
+
+                        card.onclick = () => {
+                            sendCmd('play_order', o.tytul);
+                            card.style.background = '#1b5e20';
+                            card.innerHTML = `<div class="order-title" style="color: #fff; font-weight: 900;">Wysyłanie...</div>`;
+
+                            // Przywrócenie pierwotnego wyglądu karty po chwili
+                            setTimeout(() => {
+                                card.style.background = originalBg;
+                                card.innerHTML = originalHTML;
+                            }, 800);
+
+                            // Zamknięcie panelu (opóźnione nieco bardziej by widać było błysk)
+                            setTimeout(() => { toggleTab(''); }, 900);
+                        };
+                        list.appendChild(card);
+                    });
+                    if (orderCount === 0) list.innerHTML = '<div style="text-align: center; color: #aaa; padding: 20px;">📭 Brak zamówień z ostatnich 8 godzin.</div>';
+                }
+            });
+
+            // Nasłuchiwanie Historii (Ostatnie 24H)
+            const cutoff = Date.now() - (24 * 60 * 60 * 1000);
+            db.ref('historia').orderByChild('timestamp').startAt(cutoff).on('value', snap => {
+                const data = [];
+                snap.forEach(child => { data.push(child.val()); });
+                data.reverse();
+                const list = document.getElementById('historyListRemote');
+                if (list) {
+                    list.innerHTML = '';
+                    if (data.length === 0) {
+                        list.innerHTML = '<div style="text-align: center; color: #aaa; padding: 20px;">Brak wpisów z ostatnich 24h.</div>';
+                        return;
+                    }
+                    data.forEach(item => {
+                        list.innerHTML += `
+                        <div style="background: #2c2c2c; margin-bottom: 6px; padding: 12px; border-radius: 8px;">
+                            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 4px;">
+                                <span style="font-size: 11px; color: #888; font-weight: bold;">${item.time}</span>
+                            </div>
+                            <div style="font-weight: bold; font-size: 14px; color: #fff; margin-bottom: 4px;">${item.title}</div>
+                            <div style="font-size: 12px; color: #aaa;">🎤 ${item.singers || 'Wybór własny'}</div>
+                        </div>`;
+                    });
+                }
+            });
+
+            // Status zdalny z przeglądarki TV
+            db.ref('remote_status').on('value', (snapshot) => {
+                const data = snapshot.val();
+                if (!data) return;
+
+                // Aktualizacja czasu ostatniej wiadomości na potrzeby pingowania
+                if (data.lastAckTs) lastAckFromExt = data.lastAckTs;
+
+                if (data.mode && currentModeInternal !== data.mode) {
+                    currentModeInternal = data.mode;
+                    toggleTab('');
+                }
+
+                const newTitle = data.currentName || "Brak utworu";
+                if (data.hasOwnProperty('autoPlay')) autoPlayToggle.checked = data.autoPlay;
+                renderOpenTabsList(data.openTabs || []);
+
+                if (waitingForSongChange) {
+                    if (newTitle !== lastSongName) {
+                        waitingForSongChange = false;
+                        unlockButtons();
+                    }
+                } else if (data.lastAckTs && data.lastAckTs === lastCmdTs) {
+                    unlockButtons();
+                }
+
+                uiMode.textContent = data.mode ? `TRYB: ${data.mode.toUpperCase()}` : "";
+
+                if (data.mode === 'karaoke') {
+                    uiMain.style.display = 'none'; uiSub.textContent = newTitle; uiSub.style.fontSize = '12vw';
+                    nextKaraokeContainer.style.display = 'block'; nextKonkursContainer.style.display = 'none'; loteriaContainer.style.display = 'none';
+                    uiNext.textContent = data.nextName || "-";
+                    uiQueue.innerHTML = '';
+                    if (data.queueList) {
+                        data.queueList.forEach(song => {
+                            const div = document.createElement('div'); div.className = 'queue-item'; div.textContent = song; uiQueue.appendChild(div);
+                        });
+                    }
+                }
+                else if (data.mode === 'konkurs') {
+                    uiMain.style.display = 'block'; uiMain.textContent = data.konkursIndex || "1";
+                    uiSub.textContent = newTitle; uiSub.style.fontSize = '8vw';
+                    nextKaraokeContainer.style.display = 'none'; nextKonkursContainer.style.display = 'block'; loteriaContainer.style.display = 'none';
+                    document.getElementById('uiNextIdx').textContent = data.nextKonkursIndex || "-";
+                    document.getElementById('uiNextName').textContent = data.nextName || "-";
+                }
+                else if (data.mode === 'loteria') {
+                    uiMain.style.display = 'none'; uiSub.textContent = "LOSOWANIE"; uiSub.style.fontSize = '15vw';
+                    nextKaraokeContainer.style.display = 'none'; nextKonkursContainer.style.display = 'none'; loteriaContainer.style.display = 'block';
+                    const winnersList = document.getElementById('winnersListRemote'); winnersList.innerHTML = '';
+                    if (data.winners && data.winners.length > 0) {
+                        data.winners.forEach(w => {
+                            winnersList.innerHTML += `
+                                <li style="background: #2c2c2c; margin-bottom: 8px; padding: 12px; border-radius: 8px; border-left: 4px solid #e91e63;">
+                                    <div style="font-weight: bold; font-size: 18px; color: #fff;">${w.name}</div>
+                                    <div style="color: #aaa; font-size: 14px; margin-top: 4px;">Zgłoszenie: <b style="color:#e91e63;">${w.code}</b></div>
+                                </li>`;
+                        });
+                    } else {
+                        winnersList.innerHTML = '<li style="text-align: center; color: #777; padding: 10px;">Brak zwycięzców w tej sesji</li>';
+                    }
+                }
+
+                // Wizja / Okna
+                const dynamicTvContainer = document.getElementById('dynamic-tv-buttons');
+                if (dynamicTvContainer) {
+                    dynamicTvContainer.innerHTML = '';
+                    if (data.activeTvOverlays && data.activeTvOverlays.length > 0) {
+                        data.activeTvOverlays.forEach(overlayId => {
+                            const btn = document.createElement('button');
+                            btn.style.cssText = "background:#f44336; color:white; border:none; padding:10px; border-radius:6px; font-size:12px; font-weight:bold; cursor:pointer; text-align:left; display:flex; justify-content:space-between;";
+                            const labelText = overlayId === 'local_ext_msg' ? 'Wiadomość z panelu DJ-a' : 'Wiadomość z telefonu';
+                            btn.innerHTML = `<span>✖ Zamknij: ${labelText}</span>`;
+                            btn.onclick = () => { sendCmd('tv_overlay_close', { id: overlayId }); if (navigator.vibrate) navigator.vibrate(20); };
+                            dynamicTvContainer.appendChild(btn);
+                        });
+                    }
+                }
+            });
+
+            // MECHANIZM PINGOWANIA - sprawdzanie aktywności rozszerzenia
+            setInterval(() => {
+                const user = auth.currentUser;
+                if (!user) return;
+
+                const now = Date.now();
+                // Pinguj tylko, jeśli nie wysłano innego polecenia przez ostatnie 5s (aby nie nadpisywać ważnych komend)
+                if (now - lastCmdTs > 5000) {
+                    db.ref('remote_cmd').set({ action: 'ping', dj: user.email, ts: now }).catch(e => console.error(e));
+                }
+
+                // Sprawdzenie statusu po chwili na odpowiedź od rozszerzenia
+                setTimeout(() => {
+                    // Jeśli rozszerzenie odpisało w ciągu ostatnich 15 sekund, uznajemy je za żywe
+                    const isAlive = (Date.now() - lastAckFromExt) < 15000;
+                    const dot = document.getElementById('connectionStatusDot');
+                    if (dot) {
+                        dot.style.background = isAlive ? '#4CAF50' : '#f44336';
+                        dot.style.boxShadow = isAlive ? '0 0 8px #4CAF50' : '0 0 8px #f44336';
+                        dot.title = isAlive ? "Rozszerzenie aktywne" : "Brak odpowiedzi (Offline)";
+                    }
+                }, 3000);
+            }, 10000);
+        } // End initApp
+
+        function clearSearch() {
+            const input = document.getElementById('searchInputRemote');
+            input.value = ''; document.getElementById('clearSearchBtn').style.display = 'none';
+            document.getElementById('searchListRemote').innerHTML = ''; input.focus();
+        }
+
+        function handleLocalSearch(query) {
+            const list = document.getElementById('searchListRemote');
+            document.getElementById('clearSearchBtn').style.display = query.length > 0 ? 'block' : 'none';
+            list.innerHTML = ''; query = query.toLowerCase().trim();
+            if (query.length < 2) return;
+
+            const results = localBaza.filter(s => s.title.toLowerCase().includes(query)).slice(0, 15);
+            if (results.length === 0) {
+                list.innerHTML = '<li style="color:#aaa; padding: 10px 0; text-align:center;">Brak wyników w bazie.</li>';
+                return;
+            }
+            results.forEach(song => {
+                const li = document.createElement('li');
+                li.className = 'clickable-item interactive';
+                li.style.cssText = 'font-size: 15px; overflow: hidden; display: flex; align-items: center; padding: 10px;';
+
+                const isIsing = song.url && song.url.includes('ising.pl');
+                let thumbHtml = '<span style="font-size: 24px; margin-right: 12px; min-width: 45px; text-align: center;">🎵</span>';
+
+                if (song.url) {
+                    if (isIsing) {
+                        thumbHtml = '<span class="badge badge-ising" style="margin-right: 12px; font-size: 11px; padding: 5px; min-width: 35px; text-align: center;">iSing</span>';
+                    } else {
+                        let vid = '';
+                        if (song.url.includes('v=')) vid = song.url.split('v=')[1].split('&')[0].substring(0, 11);
+                        else if (song.url.includes('youtu.be/')) vid = song.url.split('youtu.be/')[1].split('?')[0].substring(0, 11);
+
+                        if (vid) {
+                            thumbHtml = `<img src="https://img.youtube.com/vi/${vid}/default.jpg" style="width: 55px; height: 40px; border-radius: 6px; object-fit: cover; margin-right: 12px; background: #111; flex-shrink: 0;">`;
+                        } else {
+                            thumbHtml = '<span class="badge badge-yt" style="margin-right: 12px; font-size: 11px; padding: 5px; min-width: 35px; text-align: center;">YT</span>';
+                        }
+                    }
+                }
+
+                li.innerHTML = `${thumbHtml} <span style="font-weight: bold; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; flex: 1;">${song.title}</span>`;
+
+                li.onclick = () => sendPlayOrder(li, song.title);
+                list.appendChild(li);
+            });
+        }
+
+        function sendPlayOrder(element, title) {
+            sendCmd('play_order', title);
+            const originalBg = element.style.background;
+            element.style.background = '#1b5e20';
+            setTimeout(() => { element.style.background = originalBg; }, 600);
+            setTimeout(() => { toggleTab(''); }, 700);
+        }
+
+        function renderOpenTabsList(tabs) {
+            const container = document.getElementById('openTabsContainer');
+            if (!tabs || tabs.length === 0) { container.innerHTML = '<div style="text-align: center; color: #aaa; padding: 20px;">Brak otwartych kart z muzyką.</div>'; return; }
+            let html = '';
+            tabs.forEach((t, i) => {
+                html += `
+                <div style="background: #2c2c2c; margin-bottom: 6px; padding: 8px 10px; border-radius: 8px; display:flex; align-items:center; gap: 10px;">
+                    <div style="display:flex; flex-direction:column; gap: 3px;">
+                        <button class="tiny-btn" onclick="sendCmd('move_tab', {id: ${t.id}, dir: -1})" ${i === 0 ? 'disabled' : ''} title="Wyżej">▲</button>
+                        <button class="tiny-btn" onclick="sendCmd('move_tab', {id: ${t.id}, dir: 1})" ${i === tabs.length - 1 ? 'disabled' : ''} title="Niżej">▼</button>
+                    </div>
+                    <div style="flex:1; word-break: break-word; white-space: normal; font-size:13px; font-weight:bold; line-height: 1.2;">${t.title}</div>
+                    <button class="tiny-btn" style="background:#4CAF50; padding:10px 10px; font-size:16px;" onclick="sendCmd('move_tab_top', ${t.id})" ${i === 0 ? 'disabled' : ''} title="Przesuń na samą górę">⏫</button>
+                    <button style="background:#d32f2f; border:none; color:white; padding:10px 12px; border-radius:6px; font-weight:bold; font-size:14px; cursor:pointer;" onclick="sendCmd('close_tab', ${t.id})" title="Zamknij">✖</button>
+                </div>`;
+            });
+            container.innerHTML = html;
+        }
+
+        function sendCmd(action, value = null) {
+            const user = auth.currentUser;
+            if (!user) { location.reload(); return; }
+
+            if (action === 'play') {
+                isPlaying = !isPlaying;
+                const btnPlay = document.getElementById('btnPlay');
+                if (btnPlay) btnPlay.textContent = isPlaying ? '⏸️' : '▶️';
+            }
+            else if (action === 'close' || action === 'close_tab' || action === 'prev' || action === 'next' || action === 'play_order') {
+                isPlaying = false;
+                const btnPlay = document.getElementById('btnPlay');
+                if (btnPlay) btnPlay.textContent = '▶️';
+            }
+
+            const buttonsIds = ['btnPrev', 'btnPlay', 'btnNext'];
+            if (action === 'prev' || action === 'next' || action === 'play') {
+                buttonsIds.forEach(id => { const btn = document.getElementById(id); if (btn) btn.disabled = true; });
+            }
+
+            let targetBtn1 = document.getElementById('btn' + action.charAt(0).toUpperCase() + action.slice(1));
+            if (targetBtn1) targetBtn1.classList.add('pressed');
+
+            lastCmdTs = Date.now();
+
+            if (action === 'prev' || action === 'next' || action === 'play_order') {
+                waitingForSongChange = true; lastSongName = uiSub.textContent;
+                clearTimeout(unlockTimeout);
+                unlockTimeout = setTimeout(() => { waitingForSongChange = false; unlockButtons(); }, 4000);
+            } else {
+                waitingForSongChange = false;
+                clearTimeout(unlockTimeout);
+                unlockTimeout = setTimeout(unlockButtons, 1500);
+            }
+
+            db.ref('remote_cmd').set({ action: action, value: value, dj: user.email, ts: lastCmdTs }).catch(e => { console.error(e); });
+            if (navigator.vibrate) navigator.vibrate(40);
+        }
+
+        function unlockButtons() {
+            ['btnPrev', 'btnPlay', 'btnNext'].forEach(id => {
+                let btn = document.getElementById(id);
+                if (btn) {
+                    if (id.includes('Play')) { btn.disabled = false; btn.classList.remove('pressed'); }
+                    else { btn.disabled = isPlaying; btn.classList.remove('pressed'); }
+                }
+            });
+        }
+
+        function forceUnlockUI() {
+            waitingForSongChange = false; isPlaying = false;
+            const btnPlay = document.getElementById('btnPlay'); if (btnPlay) btnPlay.textContent = '▶️';
+            unlockButtons(); if (navigator.vibrate) navigator.vibrate(20);
+        }
+
+        async function uploadImageToImgBB(file) {
+            if (!file) return;
+            const API_KEY = 'f98fb89b1b4311d6ad650b93a22954a0';
+            const btnLabel = document.getElementById('uploadImgBtn');
+            const imgInputUrl = document.getElementById('ovImg');
+
+            btnLabel.style.background = '#888'; btnLabel.innerHTML = '⏳ Przesyłam...'; btnLabel.style.pointerEvents = 'none';
+
+            const formData = new FormData(); formData.append("image", file);
+
+            try {
+                const response = await fetch(`https://api.imgbb.com/1/upload?expiration=120&key=${API_KEY}`, { method: "POST", body: formData });
+                if (!response.ok) throw new Error(`Odmowa dostępu do serwera`);
+                const data = await response.json();
+                if (data.success) {
+                    imgInputUrl.value = data.data.url;
+                    if (imgInputUrl.nextElementSibling) imgInputUrl.nextElementSibling.style.display = 'block';
+                    btnLabel.style.background = '#4CAF50'; btnLabel.innerHTML = '✅ Sukces!';
+                    if (navigator.vibrate) navigator.vibrate([30, 30, 30]);
+                    setTimeout(autoFitWindow, 500);
+                } else throw new Error("Serwer odrzucił plik.");
+            } catch (err) {
+                alert("Błąd podczas wgrywania: " + err.message);
+                btnLabel.style.background = '#f44336'; btnLabel.innerHTML = '❌ Błąd';
+            } finally {
+                setTimeout(() => {
+                    btnLabel.style.background = '#2196F3'; btnLabel.style.pointerEvents = 'auto';
+                    btnLabel.innerHTML = '<input type="file" id="imgUploadInput" accept="image/*" style="display: none;" onchange="uploadImageToImgBB(this.files[0])">📸 Wstaw z galerii';
+                }, 3000);
+            }
+        }
+
+        function renderSoundsGrid() {
+            const grid = document.getElementById('soundsGrid'); grid.innerHTML = '';
+            if (gistSounds.length === 0) { grid.innerHTML = '<div style="grid-column: 1 / -1; text-align: center; color: #888; font-size: 12px; padding: 20px;">Brak dźwięków w bazie.</div>'; return; }
+
+            gistSounds.forEach((sound, i) => {
+                const btn = document.createElement('button');
+                btn.className = 'sound-grid-btn'; btn.id = 'sound-btn-' + i; btn.textContent = sound.title;
+                btn.onclick = () => {
+                    if (currentlyPlayingUrl === sound.url) {
+                        // ZATRZYMYWANIE
+                        if (soundTarget === 'phone') {
+                            localAudio.pause();
+                            localAudio.currentTime = 0;
+                        } else {
+                            sendCmd('remote_audio', { action: 'stop', timestamp: Date.now() });
+                        }
+                        currentlyPlayingUrl = null;
+                        btn.classList.remove('playing');
+                    } else {
+                        // ODTWARZANIE
+                        // Najpierw zatrzymaj poprzedni dźwięk
+                        if (currentlyPlayingUrl) {
+                            if (soundTarget === 'phone') {
+                                localAudio.pause();
+                                localAudio.currentTime = 0;
+                            } else {
+                                sendCmd('remote_audio', { action: 'stop', timestamp: Date.now() });
+                            }
+                        }
+
+                        currentlyPlayingUrl = sound.url;
+                        document.querySelectorAll('.sound-grid-btn').forEach(b => b.classList.remove('playing'));
+                        btn.classList.add('playing');
+
+                        if (soundTarget === 'phone') {
+                            localAudio.src = sound.url;
+                            localAudio.volume = document.getElementById('volSlider').value / 100;
+                            localAudio.play().catch(e => console.error("Błąd odtwarzania:", e));
+
+                            localAudio.onended = () => {
+                                if (currentlyPlayingUrl === sound.url) {
+                                    currentlyPlayingUrl = null;
+                                    btn.classList.remove('playing');
+                                }
+                            };
+                        } else {
+                            sendCmd('remote_audio', { action: 'play', url: sound.url, timestamp: Date.now() });
+                            setTimeout(() => {
+                                if (soundTarget === 'ext' && currentlyPlayingUrl === sound.url) {
+                                    currentlyPlayingUrl = null;
+                                    btn.classList.remove('playing');
+                                }
+                            }, 8000);
+                        }
+                    }
+                    if (navigator.vibrate) navigator.vibrate(20);
+                };
+                grid.appendChild(btn);
+            });
+        }
+
+        async function addNewSound() {
+            const titleInput = document.getElementById('newSoundTitle');
+            const urlInput = document.getElementById('newSoundUrl');
+            const btn = document.getElementById('addSoundBtn');
+            const title = titleInput.value.trim(); const url = urlInput.value.trim();
+
+            if (!title || !url) { alert("Podaj nazwę i adres url pliku .mp3!"); return; }
+            btn.textContent = "⏳ Dodawanie..."; btn.disabled = true;
+
+            try {
+                await db.ref('dzwieki').push({ title: title, url: url });
+                titleInput.value = ''; urlInput.value = '';
+                if (titleInput.nextElementSibling) titleInput.nextElementSibling.style.display = 'none';
+                if (urlInput.nextElementSibling) urlInput.nextElementSibling.style.display = 'none';
+            } catch (err) {
+                alert("Wystąpił problem z połączeniem: " + err.message);
+            } finally {
+                btn.textContent = "Zapisz"; btn.disabled = false;
+            }
+        }
+
+        function updateWinPreview() {
+            const w = document.getElementById('winW').value; const h = document.getElementById('winH').value;
+            document.getElementById('wDisp').textContent = w + "%"; document.getElementById('hDisp').textContent = h + "%";
+            const box = document.getElementById('posBox'); box.style.width = w + "%"; box.style.height = h + "%";
+            if (relX + parseInt(w) > 100) relX = 100 - parseInt(w); if (relY + parseInt(h) > 100) relY = 100 - parseInt(h);
+            box.style.left = relX + "%"; box.style.top = relY + "%";
+        }
+
+        function setPos(e) {
+            const area = document.getElementById('posArea'); const rect = area.getBoundingClientRect();
+            const w = document.getElementById('winW').value; const h = document.getElementById('winH').value;
+            let x = ((e.clientX - rect.left) / rect.width) * 100; let y = ((e.clientY - rect.top) / rect.height) * 100;
+            relX = Math.max(0, Math.min(100 - w, x - w / 2)); relY = Math.max(0, Math.min(100 - h, y - h / 2));
+            updateWinPreview();
+        }
+
+        function autoFitWindow() {
+            const wInput = document.getElementById('winW'); const hInput = document.getElementById('winH');
+            const imgUrl = document.getElementById('ovImg').value.trim(); const textVal = document.getElementById('ovText').value.trim();
+            const tvAspectStr = document.getElementById('tvAspect').value.split('/'); const screenRatio = parseFloat(tvAspectStr[0]) / parseFloat(tvAspectStr[1]);
+
+            if (imgUrl) {
+                const img = new Image();
+                img.onload = () => {
+                    const imgRatio = img.naturalWidth / img.naturalHeight;
+                    let newH = parseInt(wInput.value) * (screenRatio / imgRatio);
+                    newH = Math.max(10, Math.min(100, Math.round(newH)));
+                    hInput.value = newH; updateWinPreview(); if (navigator.vibrate) navigator.vibrate(20);
+                };
+                img.src = imgUrl;
+            } else if (textVal) {
+                let newH = parseInt(wInput.value) / 3; newH = Math.max(10, Math.min(100, Math.round(newH)));
+                hInput.value = newH; updateWinPreview(); if (navigator.vibrate) navigator.vibrate(20);
+            }
+        }
+
+        function sendOverlay(active, target) {
+            const user = auth.currentUser;
+            if (!user) { location.reload(); return; }
+
+            const payload = {
+                active: active, text: document.getElementById('ovText').value.trim(), textColor: document.getElementById('ovTextColor').value,
+                textBlink: document.getElementById('ovTextBlink').checked, imageUrl: document.getElementById('ovImg').value.trim(),
+                win: { mode: document.getElementById('tvWindowMode').value, w: parseInt(document.getElementById('winW').value), h: parseInt(document.getElementById('winH').value), x: relX, y: relY }
+            };
+
+            if (target === 'roboczy') sendCmd('custom_overlay', payload);
+            else if (target === 'tv') {
+                if (active) { const overlayId = Date.now().toString(); sendCmd('tv_overlay_open', { id: overlayId, payload: payload }); }
+            }
+            if (navigator.vibrate) navigator.vibrate(20);
+        }
+
+        async function searchGifs() {
+            const query = document.getElementById('gifSearchQuery').value.trim();
+            const resultsDiv = document.getElementById('gifResults');
+            if (!query) return;
+
+            resultsDiv.innerHTML = '<span style="color:#aaa; font-size:12px;">Szukam...</span>';
+            try {
+                const res = await fetch(`https://g.tenor.com/v1/search?q=${encodeURIComponent(query)}&key=LIVDSRZULELA&limit=20`);
+                const data = await res.json();
+                resultsDiv.innerHTML = '';
+                if (data.results && data.results.length > 0) {
+                    data.results.forEach(gif => {
+                        const url = gif.media[0].gif.url; const preview = gif.media[0].nanogif.url;
+                        const img = document.createElement('img'); img.src = preview; img.style.height = '60px'; img.style.borderRadius = '4px'; img.style.cursor = 'pointer'; img.style.border = '2px solid transparent';
+                        img.onclick = () => {
+                            const ovImgInput = document.getElementById('ovImg'); ovImgInput.value = url;
+                            if (ovImgInput.nextElementSibling) ovImgInput.nextElementSibling.style.display = 'block';
+                            Array.from(resultsDiv.children).forEach(c => c.style.borderColor = 'transparent'); img.style.borderColor = '#9c27b0';
+                        };
+                        resultsDiv.appendChild(img);
+                    });
+                } else resultsDiv.innerHTML = '<span style="color:#aaa; font-size:12px;">Brak wyników</span>';
+            } catch (e) { resultsDiv.innerHTML = '<span style="color:#f44336; font-size:12px;">Błąd pobierania</span>'; }
+        }
+        document.getElementById('gifSearchQuery').addEventListener('keypress', function (e) { if (e.key === 'Enter') searchGifs(); });
+
+        let localStream = null; let peerConnection = null;
+        async function toggleMic() {
+            const btn = document.getElementById('btnMic');
+            if (localStream) {
+                localStream.getTracks().forEach(track => track.stop()); localStream = null;
+                if (peerConnection) peerConnection.close(); peerConnection = null;
+                db.ref('webrtc').remove(); btn.innerHTML = '🎙️ WŁĄCZ MIKROFON (TALKBACK)'; btn.style.background = '#ff9800'; sendCmd('debug', 'Zatrzymano mikrofon na telefonie');
+                return;
+            }
+            try {
+                btn.innerHTML = '⏳ Mikrofon (Krok 1)...'; sendCmd('debug', '1. Żądam dostępu do mikrofonu od przeglądarki...');
+                localStream = await navigator.mediaDevices.getUserMedia({ audio: true });
+                btn.innerHTML = '⏳ Łączenie (Krok 2)...'; sendCmd('debug', '2. Otrzymano mikrofon. Buduję połączenie (RTCPeerConnection)...');
+                peerConnection = new RTCPeerConnection({ iceServers: [{ urls: "stun:stun.relay.metered.ca:80" }, { urls: "turn:global.relay.metered.ca:80", username: "12760328858a1463f5f5bc67", credential: "sIwXPxa3nn0cRQn1" }] });
+                localStream.getTracks().forEach(track => peerConnection.addTrack(track, localStream));
+                peerConnection.onicecandidate = (event) => { if (event.candidate) db.ref('webrtc/pilot_candidates').push({ candidate: event.candidate.candidate, sdpMid: event.candidate.sdpMid, sdpMLineIndex: event.candidate.sdpMLineIndex }); };
+                btn.innerHTML = '⏳ Zaproszenie (Krok 3)...'; sendCmd('debug', '3. Tworzę ofertę WebRTC i wysyłam do Firebase...');
+                const offer = await peerConnection.createOffer(); await peerConnection.setLocalDescription(offer);
+                await db.ref('webrtc/offer').set({ type: offer.type, sdp: offer.sdp });
+                sendCmd('debug', '4. Oferta w bazie. Czekam na odpowiedź (Answer) z laptopa...');
+                db.ref('webrtc/answer').off();
+                db.ref('webrtc/answer').on('value', async (snap) => {
+                    const answer = snap.val();
+                    if (answer && peerConnection && peerConnection.signalingState !== 'stable') {
+                        try {
+                            sendCmd('debug', '5. ODEBRANO odpowiedź z laptopa! Paruję...');
+                            await peerConnection.setRemoteDescription(new RTCSessionDescription({ type: answer.type, sdp: answer.sdp }));
+                            btn.innerHTML = '🔴 MIKROFON NA ŻYWO (Kliknij by wyłączyć)'; btn.style.background = '#e53935';
+                            if (navigator.vibrate) navigator.vibrate([50, 50, 50]); sendCmd('debug', '6. SUKCES! Mikrofon podłączony.');
+                        } catch (err) { sendCmd('debug', 'BŁĄD PAROWANIA: ' + err.message); }
+                    }
+                });
+                db.ref('webrtc/laptop_candidates').off();
+                db.ref('webrtc/laptop_candidates').on('child_added', (snap) => {
+                    const candidate = snap.val(); if (candidate && peerConnection.remoteDescription) peerConnection.addIceCandidate(new RTCIceCandidate(candidate));
+                });
+            } catch (err) { alert("Brak uprawnień lub błąd telefonu: " + err.message); btn.innerHTML = '🎙️ WŁĄCZ MIKROFON (TALKBACK)'; btn.style.background = '#ff9800'; sendCmd('debug', 'KRYTYCZNY BŁĄD TELEFONU: ' + err.message); }
+        }
+    </script>
+</body>
+
+</html>
