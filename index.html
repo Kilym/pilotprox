@@ -847,6 +847,7 @@
         let waitingForSongChange = false; let lastSongName = ""; let currentModeInternal = "karaoke";
         let localBaza = []; let relX = 0; let relY = 0; let gistSounds = []; let currentlyPlayingUrl = null;
         let lastAckFromExt = 0; // Czas ostatniej odpowiedzi od rozszerzenia (teraz to heartbeat audio)
+        let knownAudioPlaying = false; // Dodaj tę linijkę do zmiennych globalnych
 
         // UI Elementy
         const uiMode = document.getElementById('uiMode'); const uiMain = document.getElementById('uiMainDisplay');
@@ -1006,23 +1007,28 @@
                 if (data.lastHeartbeatTs) lastAckFromExt = data.lastHeartbeatTs; // Nowy system
                 else if (data.lastAckTs) lastAckFromExt = data.lastAckTs; // Fallback do starego systemu
 
-                // --- AKTUALIZACJA WSKAŹNIKA AUDIO (NOWE) ---
-                const musicDot = document.getElementById('musicStatusDot');
-                if (musicDot) {
-                    if (data.isAudioPlaying) {
-                        musicDot.textContent = '🎵';
-                        musicDot.style.filter = 'none';
-                        musicDot.style.opacity = '1';
-                        musicDot.style.textShadow = '0 0 10px #03dac6';
-                        musicDot.title = 'Muzyka gra!';
-                    } else {
-                        musicDot.textContent = '🔇';
-                        musicDot.style.filter = 'grayscale(100%)';
-                        musicDot.style.opacity = '0.3';
-                        musicDot.style.textShadow = 'none';
-                        musicDot.title = 'Cisza...';
-                    }
+              // --- AKTUALIZACJA WSKAŹNIKA AUDIO (NOWE - ZAPAMIĘTYWANIE STANU) ---
+            // Aktualizujemy znaną wartość TYLKO, gdy Firebase nam ją wyraźnie przysłał
+            if (data.hasOwnProperty('isAudioPlaying')) {
+                knownAudioPlaying = data.isAudioPlaying;
+            }
+
+            const musicDot = document.getElementById('musicStatusDot');
+            if (musicDot) {
+                if (knownAudioPlaying) {
+                    musicDot.textContent = '🎵';
+                    musicDot.style.filter = 'none';
+                    musicDot.style.opacity = '1';
+                    musicDot.style.textShadow = '0 0 10px #03dac6';
+                    musicDot.title = 'Muzyka gra!';
+                } else {
+                    musicDot.textContent = '🔇';
+                    musicDot.style.filter = 'grayscale(100%)';
+                    musicDot.style.opacity = '0.3';
+                    musicDot.style.textShadow = 'none';
+                    musicDot.title = 'Cisza...';
                 }
+            }
 
                 if (data.mode && currentModeInternal !== data.mode) {
                     currentModeInternal = data.mode;
