@@ -395,10 +395,17 @@
             <button class="top-btn logout-btn" onclick="logoutDJ()" title="Wyloguj się">🚪</button>
         </div>
 
-        <!-- Wskaźnik statusu poniżej górnego paska -->
+        <!-- Wskaźniki statusu poniżej górnego paska -->
         <div style="position: relative; width: 100%; height: 0;">
+            <!-- NOWE: Wskaźnik audio (lewy górny róg) -->
+            <div id="musicStatusDot" title="Sprawdzanie audio..."
+                style="position: absolute; top: 10px; left: 15px; font-size: 18px; opacity: 0.3; filter: grayscale(100%); transition: 0.3s; z-index: 10;">
+                🔇
+            </div>
+
+            <!-- ISTNIEJĄCE: Wskaźnik połączenia (prawy górny róg) -->
             <div id="connectionStatusDot" title="Sprawdzanie połączenia..."
-                style="position: absolute; top: 8px; right: 15px; width: 12px; height: 12px; border-radius: 50%; background: #f44336; box-shadow: 0 0 8px #f44336; transition: 0.3s; z-index: 10;">
+                style="position: absolute; top: 14px; right: 15px; width: 12px; height: 12px; border-radius: 50%; background: #f44336; box-shadow: 0 0 8px #f44336; transition: 0.3s; z-index: 10;">
             </div>
         </div>
 
@@ -839,7 +846,7 @@
         let lastCmdTs = 0; let unlockTimeout = null; let isPlaying = false;
         let waitingForSongChange = false; let lastSongName = ""; let currentModeInternal = "karaoke";
         let localBaza = []; let relX = 0; let relY = 0; let gistSounds = []; let currentlyPlayingUrl = null;
-        let lastAckFromExt = 0; // Czas ostatniej odpowiedzi od rozszerzenia
+        let lastAckFromExt = 0; // Czas ostatniej odpowiedzi od rozszerzenia (teraz to heartbeat audio)
 
         // UI Elementy
         const uiMode = document.getElementById('uiMode'); const uiMain = document.getElementById('uiMainDisplay');
@@ -990,13 +997,32 @@
                 }
             });
 
-            // Status zdalny z przeglądarki TV
+            // Status zdalny z przeglądarki TV (z nowym heartbeaten co 3s)
             db.ref('remote_status').on('value', (snapshot) => {
                 const data = snapshot.val();
                 if (!data) return;
 
-                // Aktualizacja czasu ostatniej wiadomości na potrzeby pingowania
-                if (data.lastAckTs) lastAckFromExt = data.lastAckTs;
+                // --- AKTUALIZACJA CZASU OSTATNIEGO SYGNAŁU ---
+                if (data.lastHeartbeatTs) lastAckFromExt = data.lastHeartbeatTs; // Nowy system
+                else if (data.lastAckTs) lastAckFromExt = data.lastAckTs; // Fallback do starego systemu
+
+                // --- AKTUALIZACJA WSKAŹNIKA AUDIO (NOWE) ---
+                const musicDot = document.getElementById('musicStatusDot');
+                if (musicDot) {
+                    if (data.isAudioPlaying) {
+                        musicDot.textContent = '🎵';
+                        musicDot.style.filter = 'none';
+                        musicDot.style.opacity = '1';
+                        musicDot.style.textShadow = '0 0 10px #03dac6';
+                        musicDot.title = 'Muzyka gra!';
+                    } else {
+                        musicDot.textContent = '🔇';
+                        musicDot.style.filter = 'grayscale(100%)';
+                        musicDot.style.opacity = '0.3';
+                        musicDot.style.textShadow = 'none';
+                        musicDot.title = 'Cisza...';
+                    }
+                }
 
                 if (data.mode && currentModeInternal !== data.mode) {
                     currentModeInternal = data.mode;
@@ -1070,29 +1096,19 @@
                 }
             });
 
-            // MECHANIZM PINGOWANIA - sprawdzanie aktywności rozszerzenia
+            // NOWY PASYWNY MECHANIZM SPRAWDZANIA AKTYWNOŚCI ROZSZERZENIA
+            // Nie musimy już wysyłać komend PING do bazy, tylko sprawdzamy czy rozszerzenie
+            // zaktualizowało timestamp (heartbeat) w ciągu ostatnich np. 12 sekund
             setInterval(() => {
-                const user = auth.currentUser;
-                if (!user) return;
-
-                const now = Date.now();
-                // Pinguj tylko, jeśli nie wysłano innego polecenia przez ostatnie 5s (aby nie nadpisywać ważnych komend)
-                if (now - lastCmdTs > 5000) {
-                    db.ref('remote_cmd').set({ action: 'ping', dj: user.email, ts: now }).catch(e => console.error(e));
+                const isAlive = (Date.now() - lastAckFromExt) < 12000;
+                const dot = document.getElementById('connectionStatusDot');
+                if (dot) {
+                    dot.style.background = isAlive ? '#4CAF50' : '#f44336';
+                    dot.style.boxShadow = isAlive ? '0 0 8px #4CAF50' : '0 0 8px #f44336';
+                    dot.title = isAlive ? "Rozszerzenie aktywne" : "Brak odpowiedzi (Offline)";
                 }
+            }, 3000);
 
-                // Sprawdzenie statusu po chwili na odpowiedź od rozszerzenia
-                setTimeout(() => {
-                    // Jeśli rozszerzenie odpisało w ciągu ostatnich 15 sekund, uznajemy je za żywe
-                    const isAlive = (Date.now() - lastAckFromExt) < 15000;
-                    const dot = document.getElementById('connectionStatusDot');
-                    if (dot) {
-                        dot.style.background = isAlive ? '#4CAF50' : '#f44336';
-                        dot.style.boxShadow = isAlive ? '0 0 8px #4CAF50' : '0 0 8px #f44336';
-                        dot.title = isAlive ? "Rozszerzenie aktywne" : "Brak odpowiedzi (Offline)";
-                    }
-                }, 3000);
-            }, 10000);
         } // End initApp
 
         function clearSearch() {
