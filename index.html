@@ -1519,7 +1519,7 @@
             if (navigator.vibrate) navigator.vibrate(30);
         }
 
-       // Nasłuchiwanie na paczkę ze zrzutami z Firebase i budowanie "Wirtualnego Pulpitu"
+      // Nasłuchiwanie na paczkę ze zrzutami z Firebase i budowanie "Wirtualnego Pulpitu"
         db.ref('remote_screenshot').on('value', snap => {
             const data = snap.val();
             if (!data || !data.images) return;
@@ -1553,15 +1553,21 @@
                             const width = (img.bounds.width / totalW) * 100;
                             const height = (img.bounds.height / totalH) * 100;
                             
-                            // Pobieramy Z-Index lub nadajemy domyślny
                             const zIdx = img.zIndex || 1;
                             
+                            // SPRAWDZENIE: Czy okno jest pełnoekranowe (zajmuje np. >95% wysokości całości)
+                            const isFullscreen = height > 95;
+
                             return `
                             <div style="position: absolute; left: ${left}%; top: ${top}%; width: ${width}%; height: ${height}%; box-sizing: border-box; border: 1px solid #03dac6; background: #111; display: flex; flex-direction: column; overflow: hidden; z-index: ${zIdx}; box-shadow: 0 4px 15px rgba(0,0,0,0.8);">
-                                <!-- PASEK TYTUŁOWY: Pełna szerokość -->
-                                <div style="width: 100%; background: #222; color: #03dac6; font-size: 7px; padding: 3px 0; text-align: center; font-weight: bold; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; flex-shrink: 0; border-bottom: 1px solid #03dac6; box-sizing: border-box;">
+                                
+                                ${!isFullscreen ? `
+                                <!-- PASEK TYTUŁOWY: Widoczny tylko w mniejszych oknach, smukły, biały tekst -->
+                                <div style="width: 100%; background: #222; color: #ffffff; font-size: 5px; padding: 1px 0; text-align: center; font-weight: normal; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; flex-shrink: 0; border-bottom: 1px solid #03dac6; box-sizing: border-box; height: auto;">
                                     ${img.title}
                                 </div>
+                                ` : ''}
+
                                 <!-- TREŚĆ OKNA -->
                                 <div style="flex: 1; position: relative;">
                                     <img src="${img.dataUrl}" style="position: absolute; top: 0; left: 0; width: 100%; height: 100%; object-fit: fill;">
@@ -1571,7 +1577,7 @@
                         }).join('')}
                     </div>
                     <div style="text-align: center; color: #666; font-size: 10px; margin-top: 15px;">
-                        Podgląd przycięty i ułożony warstwami. Pamiętaj: kliknięcie na okno w PC przenosi je na wierzch!
+                        Podgląd przycięty i ułożony warstwami.
                     </div>
                 `;
 
