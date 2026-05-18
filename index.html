@@ -1528,51 +1528,46 @@
             if (gallery && document.getElementById('screenshotModal').style.display === 'flex') {
                 gallery.innerHTML = '';
                 
-                // Odfiltrowujemy okna, które z jakiegoś powodu nie mają przypisanej pozycji
                 const validImages = data.images.filter(img => img.bounds);
 
                 if (validImages.length === 0) {
-                    gallery.innerHTML = '<div style="color:#aaa; text-align:center; margin-top: 50px;">Brak danych o położeniu okien. Okna zminimalizowane?</div>';
+                    gallery.innerHTML = '<div style="color:#aaa; text-align:center; margin-top: 50px;">Brak danych o położeniu okien.</div>';
                     return;
                 }
 
-                // 1. Zamiast liczyć całą rozpiętość monitorów, liczymy TYLKO skrajne punkty 
-                // otwartych okien (przycinamy pustą przestrzeń)
+                // Skrajne współrzędne otwartych okien
                 const minX = Math.min(...validImages.map(img => img.bounds.left));
                 const minY = Math.min(...validImages.map(img => img.bounds.top));
                 const maxX = Math.max(...validImages.map(img => img.bounds.left + img.bounds.width));
                 const maxY = Math.max(...validImages.map(img => img.bounds.top + img.bounds.height));
 
-                // Ochrona przed dzieleniem przez zero, jeśli okna mają dziwne wymiary
                 const totalW = Math.max(maxX - minX, 800); 
                 const totalH = Math.max(maxY - minY, 600);
                 const ratio = totalW / totalH;
 
-                // 2. Budujemy kontener dopasowany tylko do przestrzeni używanej przez aplikację
+                // Budowa czystej siatki bez obciążających cieni i grubych ramek
                 const workspaceHTML = `
-                    <div style="position: relative; width: 100%; aspect-ratio: ${ratio}; background: #1a1a1a; border: 2px solid #444; border-radius: 8px; overflow: hidden; box-shadow: inset 0 0 20px rgba(0,0,0,0.8);">
-                        <!-- Siatka pomocnicza -->
-                        <div style="position:absolute; width:100%; height:100%; background-image: linear-gradient(rgba(255,255,255,0.05) 1px, transparent 1px), linear-gradient(90deg, rgba(255,255,255,0.05) 1px, transparent 1px); background-size: 10% 10%;"></div>
+                    <div style="position: relative; width: 100%; aspect-ratio: ${ratio}; background: #000; border: 1px solid #333; overflow: hidden;">
                         
                         ${validImages.map(img => {
-                            // Obliczamy procentową pozycję względem skrajnych krawędzi samych okien
                             const left = ((img.bounds.left - minX) / totalW) * 100;
                             const top = ((img.bounds.top - minY) / totalH) * 100;
                             const width = (img.bounds.width / totalW) * 100;
                             const height = (img.bounds.height / totalH) * 100;
                             
+                            // Delikatna ramka 1px i mała, pływająca etykieta
                             return `
-                            <div style="position: absolute; left: ${left}%; top: ${top}%; width: ${width}%; height: ${height}%; border: 1px solid #2196F3; background: #000; box-shadow: 0 4px 15px rgba(0,0,0,0.8); display:flex; flex-direction:column; overflow:hidden;">
-                                <div style="background: rgba(33, 150, 243, 0.9); color: #fff; font-size: 8px; padding: 2px 4px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; flex-shrink:0;">
+                            <div style="position: absolute; left: ${left}%; top: ${top}%; width: ${width}%; height: ${height}%; box-sizing: border-box; border: 1px solid #03dac6; background: #111; overflow: hidden;">
+                                <div style="position: absolute; top: 0; left: 0; background: rgba(0,0,0,0.7); color: #03dac6; font-size: 6px; padding: 2px 4px; z-index: 2; white-space: nowrap;">
                                     ${img.title}
                                 </div>
-                                <img src="${img.dataUrl}" style="width: 100%; height: 100%; object-fit: contain;">
+                                <img src="${img.dataUrl}" style="position: absolute; top: 0; left: 0; width: 100%; height: 100%; object-fit: fill; z-index: 1;">
                             </div>
                             `;
                         }).join('')}
                     </div>
-                    <div style="text-align: center; color: #888; font-size: 11px; margin-top: 15px; line-height: 1.4;">
-                        Widok przycięty wyłącznie do obszaru aktywnych okien.
+                    <div style="text-align: center; color: #666; font-size: 10px; margin-top: 15px;">
+                        Podgląd przycięty i skompresowany dla oszczędności transferu.
                     </div>
                 `;
 
