@@ -1519,7 +1519,7 @@
             if (navigator.vibrate) navigator.vibrate(30);
         }
 
-        // Nasłuchiwanie na paczkę ze zrzutami z Firebase i budowanie "Przyciętego Wirtualnego Pulpitu"
+       // Nasłuchiwanie na paczkę ze zrzutami z Firebase i budowanie "Wirtualnego Pulpitu"
         db.ref('remote_screenshot').on('value', snap => {
             const data = snap.val();
             if (!data || !data.images) return;
@@ -1535,7 +1535,6 @@
                     return;
                 }
 
-                // Skrajne współrzędne otwartych okien
                 const minX = Math.min(...validImages.map(img => img.bounds.left));
                 const minY = Math.min(...validImages.map(img => img.bounds.top));
                 const maxX = Math.max(...validImages.map(img => img.bounds.left + img.bounds.width));
@@ -1545,7 +1544,6 @@
                 const totalH = Math.max(maxY - minY, 600);
                 const ratio = totalW / totalH;
 
-                // Budowa czystej siatki bez obciążających cieni i grubych ramek
                 const workspaceHTML = `
                     <div style="position: relative; width: 100%; aspect-ratio: ${ratio}; background: #000; border: 1px solid #333; overflow: hidden;">
                         
@@ -1555,19 +1553,25 @@
                             const width = (img.bounds.width / totalW) * 100;
                             const height = (img.bounds.height / totalH) * 100;
                             
-                            // Delikatna ramka 1px i mała, pływająca etykieta
+                            // Pobieramy Z-Index lub nadajemy domyślny
+                            const zIdx = img.zIndex || 1;
+                            
                             return `
-                            <div style="position: absolute; left: ${left}%; top: ${top}%; width: ${width}%; height: ${height}%; box-sizing: border-box; border: 1px solid #03dac6; background: #111; overflow: hidden;">
-                                <div style="position: absolute; top: 0; left: 0; background: rgba(0,0,0,0.7); color: #03dac6; font-size: 6px; padding: 2px 4px; z-index: 2; white-space: nowrap;">
+                            <div style="position: absolute; left: ${left}%; top: ${top}%; width: ${width}%; height: ${height}%; box-sizing: border-box; border: 1px solid #03dac6; background: #111; display: flex; flex-direction: column; overflow: hidden; z-index: ${zIdx}; box-shadow: 0 4px 15px rgba(0,0,0,0.8);">
+                                <!-- PASEK TYTUŁOWY: Pełna szerokość -->
+                                <div style="width: 100%; background: #222; color: #03dac6; font-size: 7px; padding: 3px 0; text-align: center; font-weight: bold; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; flex-shrink: 0; border-bottom: 1px solid #03dac6; box-sizing: border-box;">
                                     ${img.title}
                                 </div>
-                                <img src="${img.dataUrl}" style="position: absolute; top: 0; left: 0; width: 100%; height: 100%; object-fit: fill; z-index: 1;">
+                                <!-- TREŚĆ OKNA -->
+                                <div style="flex: 1; position: relative;">
+                                    <img src="${img.dataUrl}" style="position: absolute; top: 0; left: 0; width: 100%; height: 100%; object-fit: fill;">
+                                </div>
                             </div>
                             `;
                         }).join('')}
                     </div>
                     <div style="text-align: center; color: #666; font-size: 10px; margin-top: 15px;">
-                        Podgląd przycięty i skompresowany dla oszczędności transferu.
+                        Podgląd przycięty i ułożony warstwami. Pamiętaj: kliknięcie na okno w PC przenosi je na wierzch!
                     </div>
                 `;
 
