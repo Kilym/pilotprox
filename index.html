@@ -525,18 +525,22 @@
             </div>
         </div>
 
-        <!-- PRZYCISKI DOLNE (EKRAN / DŹWIĘKI) -->
+        <!-- PRZYCISKI DOLNE (EKRAN / DŹWIĘKI / PODGLĄD) -->
         <div style="position: fixed; bottom: 15px; left: 15px; right: 15px; display: flex; gap: 8px; z-index: 9999;">
             <button onclick="document.getElementById('overlayModal').style.display='flex'"
-                style="flex:1.5; background: rgba(156, 39, 176, 0.85); border: 1px solid #7b1fa2; color: white; border-radius: 12px; padding: 10px; font-size: 14px; font-weight: bold; cursor: pointer; box-shadow: 0 4px 10px rgba(0,0,0,0.5);">
+                style="flex:1.2; background: rgba(156, 39, 176, 0.85); border: 1px solid #7b1fa2; color: white; border-radius: 12px; padding: 10px; font-size: 14px; font-weight: bold; cursor: pointer; box-shadow: 0 4px 10px rgba(0,0,0,0.5);">
                 🪄 Ekran
             </button>
             <button onclick="document.getElementById('soundsModal').style.display='flex'"
-                style="flex:1.5; background: rgba(3, 218, 198, 0.85); border: 1px solid #00b3a6; color: black; border-radius: 12px; padding: 10px; font-size: 14px; font-weight: bold; cursor: pointer; box-shadow: 0 4px 10px rgba(0,0,0,0.5);">
+                style="flex:1.2; background: rgba(3, 218, 198, 0.85); border: 1px solid #00b3a6; color: black; border-radius: 12px; padding: 10px; font-size: 14px; font-weight: bold; cursor: pointer; box-shadow: 0 4px 10px rgba(0,0,0,0.5);">
                 🎵 Dźwięki
             </button>
+            <button onclick="requestScreenshot()" title="Podgląd ekranów TV"
+                style="flex:1.2; background: rgba(33, 150, 243, 0.85); border: 1px solid #1976d2; color: white; border-radius: 12px; padding: 10px; font-size: 14px; font-weight: bold; cursor: pointer; box-shadow: 0 4px 10px rgba(0,0,0,0.5);">
+                📸 Podgląd
+            </button>
             <button onclick="forceUnlockUI()" title="Odblokuj przyciski"
-                style="flex:1; background: rgba(34, 34, 34, 0.85); border: 1px solid #555; color: #ccc; border-radius: 12px; padding: 10px; font-size: 12px; font-weight: bold; cursor: pointer; box-shadow: 0 4px 10px rgba(0,0,0,0.5);">
+                style="flex:0.8; background: rgba(34, 34, 34, 0.85); border: 1px solid #555; color: #ccc; border-radius: 12px; padding: 10px; font-size: 12px; font-weight: bold; cursor: pointer; box-shadow: 0 4px 10px rgba(0,0,0,0.5);">
                 🔄 Reset
             </button>
         </div>
@@ -731,6 +735,26 @@
                     style="width:100%; background:#333; color:#fff; font-weight:bold; border:none; padding:12px; border-radius: 8px; font-size:16px; cursor:pointer;">✖
                     Zamknij panel</button>
             </div>
+        </div>
+    </div>
+
+    <!-- MODAL PODGLĄDU EKRANÓW -->
+    <div id="screenshotModal"
+        style="display:none; position:fixed; top:0; left:0; width:100vw; height:100dvh; background:rgba(0,0,0,0.95); z-index:10000; flex-direction:column; align-items:center; box-sizing:border-box;">
+        <div style="width:100%; display:flex; justify-content:space-between; align-items:center; padding: 15px; background: #111; border-bottom: 1px solid #333;">
+            <h3 style="margin:0; color:#2196F3; font-size: 18px;">📸 Aktywne Ekrany</h3>
+            <button onclick="document.getElementById('screenshotModal').style.display='none'" style="background:none; border:none; color:white; font-size:24px; cursor:pointer;">✖</button>
+        </div>
+        <div style="flex:1; width:100%; overflow-y:auto; padding: 15px; box-sizing:border-box;">
+            <div id="screenshotGallery" style="display:flex; flex-direction:column; gap:15px; padding-bottom: 30px;">
+                <!-- Zdjęcia pojawią się tutaj -->
+            </div>
+        </div>
+        <div style="padding: 15px; width: 100%; background: #111; border-top: 1px solid #333; box-sizing:border-box;">
+            <button onclick="requestScreenshot()"
+                style="width:100%; background:#2196F3; color:#fff; font-weight:bold; border:none; padding:15px; border-radius: 8px; font-size:16px; cursor:pointer; text-transform:uppercase;">
+                🔄 Odśwież Zrzuty
+            </button>
         </div>
     </div>
 
@@ -1478,6 +1502,51 @@
                 });
             } catch (err) { alert("Brak uprawnień lub błąd telefonu: " + err.message); btn.innerHTML = '🎙️ WŁĄCZ MIKROFON (TALKBACK)'; btn.style.background = '#ff9800'; sendCmd('debug', 'KRYTYCZNY BŁĄD TELEFONU: ' + err.message); }
         }
+
+        // ==========================================
+        // 📸 LOGIKA PODGLĄDU EKRANÓW (ZRZUTY)
+        // ==========================================
+        function requestScreenshot() {
+            document.getElementById('screenshotModal').style.display = 'flex';
+            const gallery = document.getElementById('screenshotGallery');
+            gallery.innerHTML = `
+                <div style="color:#aaa; text-align:center; margin-top: 50px;">
+                    <span style="font-size: 30px;">⏳</span><br><br>
+                    Wymuszam zrzuty ekranów...<br>
+                    <small style="color:#666;">(Może to potrwać od 1 do 3 sekund)</small>
+                </div>`;
+            sendCmd('screenshot', { ts: Date.now() });
+            if (navigator.vibrate) navigator.vibrate(30);
+        }
+
+        // Nasłuchiwanie na paczkę ze zrzutami z Firebase
+        db.ref('remote_screenshot').on('value', snap => {
+            const data = snap.val();
+            if (!data || !data.images) return;
+            
+            const gallery = document.getElementById('screenshotGallery');
+            if (gallery && document.getElementById('screenshotModal').style.display === 'flex') {
+                gallery.innerHTML = '';
+                
+                if (data.images.length === 0) {
+                    gallery.innerHTML = '<div style="color:#aaa; text-align:center; margin-top: 50px;">Brak okien do podglądu.</div>';
+                    return;
+                }
+
+                data.images.forEach((imgObj) => {
+                    gallery.innerHTML += `
+                        <div style="background:#222; padding:10px; border-radius:8px; border:1px solid #444; box-shadow: 0 4px 10px rgba(0,0,0,0.5);">
+                            <div style="font-size:13px; color:#2196F3; margin-bottom:8px; font-weight:bold; text-transform:uppercase;">
+                                🖥️ ${imgObj.title}
+                            </div>
+                            <img src="${imgObj.dataUrl}" style="width:100%; border-radius:4px; border:1px solid #000; min-height: 100px; background: #000;">
+                        </div>
+                    `;
+                });
+                
+                if (navigator.vibrate) navigator.vibrate([20, 20, 20]); // Potrójna wibracja na znak że pobrano
+            }
+        });
     </script>
 </body>
 
