@@ -1519,7 +1519,7 @@
             if (navigator.vibrate) navigator.vibrate(30);
         }
 
-        // Nasłuchiwanie na paczkę ze zrzutami z Firebase
+        // Nasłuchiwanie na paczkę ze zrzutami z Firebase i budowanie "Wirtualnego Pulpitu"
         db.ref('remote_screenshot').on('value', snap => {
             const data = snap.val();
             if (!data || !data.images) return;
@@ -1529,22 +1529,62 @@
                 gallery.innerHTML = '';
                 
                 if (data.images.length === 0) {
-                    gallery.innerHTML = '<div style="color:#aaa; text-align:center; margin-top: 50px;">Brak okien do podglądu.</div>';
+                    gallery.innerHTML = '<div style="color:#aaa; text-align:center; margin-top: 50px;">Nie zrobiono żadnych zrzutów. Okna zminimalizowane?</div>';
                     return;
                 }
 
-                data.images.forEach((imgObj) => {
-                    gallery.innerHTML += `
-                        <div style="background:#222; padding:10px; border-radius:8px; border:1px solid #444; box-shadow: 0 4px 10px rgba(0,0,0,0.5);">
-                            <div style="font-size:13px; color:#2196F3; margin-bottom:8px; font-weight:bold; text-transform:uppercase;">
-                                🖥️ ${imgObj.title}
-                            </div>
-                            <img src="${imgObj.dataUrl}" style="width:100%; border-radius:4px; border:1px solid #000; min-height: 100px; background: #000;">
-                        </div>
-                    `;
-                });
+                // 1. Obliczamy wymiary całego "wirtualnego pulpitu" (zlepek wszystkich monitorów)
+                let minX = 0, minY = 0, maxX = 0, maxY = 0;
                 
-                if (navigator.vibrate) navigator.vibrate([20, 20, 20]); // Potrójna wibracja na znak że pobrano
+                if (data.displays && data.displays.length > 0) {
+                    minX = Math.min(...data.displays.map(d => d.bounds.left));
+                    minY = Math.min(...data.displays.map(d => d.bounds.top));
+                    maxX = Math.max(...data.displays.map(d => d.bounds.left + d.bounds.width));
+                    maxY = Math.max(...data.displays.map(d => d.bounds.top + d.bounds.height));
+                } else {
+                    // Zabezpieczenie, gdyby brakowało info o monitorach
+                    minX = Math.min(...data.images.map(img => img.bounds ? img.bounds.left : 0));
+                    minY = Math.min(...data.images.map(img => img.bounds ? img.bounds.top : 0));
+                    maxX = Math.max(...data.images.map(img => img.bounds ? (img.bounds.left + img.bounds.width) : 1920));
+                    maxY = Math.max(...data.images.map(img => img.bounds ? (img.bounds.top + img.bounds.height) : 1080));
+                }
+
+                const totalW = maxX - minX || 1920;
+                const totalH = maxY - minY || 1080;
+                const ratio = totalW / totalH;
+
+                // 2. Budujemy kontener pulpitu i układamy w nim zrzuty w pozycji absolutnej
+                const workspaceHTML = `
+                    <div style="position: relative; width: 100%; aspect-ratio: ${ratio}; background: #1a1a1a; border: 2px solid #444; border-radius: 8px; overflow: hidden; box-shadow: inset 0 0 20px rgba(0,0,0,0.8);">
+                        <!-- Siatka pomocnicza przypominająca ekrany -->
+                        <div style="position:absolute; width:100%; height:100%; background-image: linear-gradient(rgba(255,255,255,0.05) 1px, transparent 1px), linear-gradient(90deg, rgba(255,255,255,0.05) 1px, transparent 1px); background-size: 10% 10%;"></div>
+                        
+                        ${data.images.map(img => {
+                            if (!img.bounds) return ''; 
+                            
+                            // Wyliczamy procentową pozycję okna w stosunku do wszystkich monitorów
+                            const left = ((img.bounds.left - minX) / totalW) * 100;
+                            const top = ((img.bounds.top - minY) / totalH) * 100;
+                            const width = (img.bounds.width / totalW) * 100;
+                            const height = (img.bounds.height / totalH) * 100;
+                            
+                            return `
+                            <div style="position: absolute; left: ${left}%; top: ${top}%; width: ${width}%; height: ${height}%; border: 1px solid #2196F3; background: #000; box-shadow: 0 4px 15px rgba(0,0,0,0.8); display:flex; flex-direction:column; overflow:hidden;">
+                                <div style="background: rgba(33, 150, 243, 0.9); color: #fff; font-size: 8px; padding: 2px 4px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; flex-shrink:0;">
+                                    ${img.title}
+                                </div>
+                                <img src="${img.dataUrl}" style="width: 100%; height: 100%; object-fit: contain;">
+                            </div>
+                            `;
+                        }).join('')}
+                    </div>
+                    <div style="text-align: center; color: #888; font-size: 11px; margin-top: 15px; line-height: 1.4;">
+                        Ten panel odwzorowuje Twoje fizyczne monitory.<br>Okna są ułożone tak, jak w rzeczywistości.
+                    </div>
+                `;
+
+                gallery.innerHTML = workspaceHTML;
+                if (navigator.vibrate) navigator.vibrate([20, 20, 20]);
             }
         });
     </script>
