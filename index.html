@@ -1519,7 +1519,7 @@
             if (navigator.vibrate) navigator.vibrate(30);
         }
 
-        // Nasłuchiwanie na paczkę ze zrzutami z Firebase i budowanie "Wirtualnego Pulpitu"
+        // Nasłuchiwanie na paczkę ze zrzutami z Firebase i budowanie "Przyciętego Wirtualnego Pulpitu"
         db.ref('remote_screenshot').on('value', snap => {
             const data = snap.val();
             if (!data || !data.images) return;
@@ -1528,41 +1528,34 @@
             if (gallery && document.getElementById('screenshotModal').style.display === 'flex') {
                 gallery.innerHTML = '';
                 
-                if (data.images.length === 0) {
-                    gallery.innerHTML = '<div style="color:#aaa; text-align:center; margin-top: 50px;">Nie zrobiono żadnych zrzutów. Okna zminimalizowane?</div>';
+                // Odfiltrowujemy okna, które z jakiegoś powodu nie mają przypisanej pozycji
+                const validImages = data.images.filter(img => img.bounds);
+
+                if (validImages.length === 0) {
+                    gallery.innerHTML = '<div style="color:#aaa; text-align:center; margin-top: 50px;">Brak danych o położeniu okien. Okna zminimalizowane?</div>';
                     return;
                 }
 
-                // 1. Obliczamy wymiary całego "wirtualnego pulpitu" (zlepek wszystkich monitorów)
-                let minX = 0, minY = 0, maxX = 0, maxY = 0;
-                
-                if (data.displays && data.displays.length > 0) {
-                    minX = Math.min(...data.displays.map(d => d.bounds.left));
-                    minY = Math.min(...data.displays.map(d => d.bounds.top));
-                    maxX = Math.max(...data.displays.map(d => d.bounds.left + d.bounds.width));
-                    maxY = Math.max(...data.displays.map(d => d.bounds.top + d.bounds.height));
-                } else {
-                    // Zabezpieczenie, gdyby brakowało info o monitorach
-                    minX = Math.min(...data.images.map(img => img.bounds ? img.bounds.left : 0));
-                    minY = Math.min(...data.images.map(img => img.bounds ? img.bounds.top : 0));
-                    maxX = Math.max(...data.images.map(img => img.bounds ? (img.bounds.left + img.bounds.width) : 1920));
-                    maxY = Math.max(...data.images.map(img => img.bounds ? (img.bounds.top + img.bounds.height) : 1080));
-                }
+                // 1. Zamiast liczyć całą rozpiętość monitorów, liczymy TYLKO skrajne punkty 
+                // otwartych okien (przycinamy pustą przestrzeń)
+                const minX = Math.min(...validImages.map(img => img.bounds.left));
+                const minY = Math.min(...validImages.map(img => img.bounds.top));
+                const maxX = Math.max(...validImages.map(img => img.bounds.left + img.bounds.width));
+                const maxY = Math.max(...validImages.map(img => img.bounds.top + img.bounds.height));
 
-                const totalW = maxX - minX || 1920;
-                const totalH = maxY - minY || 1080;
+                // Ochrona przed dzieleniem przez zero, jeśli okna mają dziwne wymiary
+                const totalW = Math.max(maxX - minX, 800); 
+                const totalH = Math.max(maxY - minY, 600);
                 const ratio = totalW / totalH;
 
-                // 2. Budujemy kontener pulpitu i układamy w nim zrzuty w pozycji absolutnej
+                // 2. Budujemy kontener dopasowany tylko do przestrzeni używanej przez aplikację
                 const workspaceHTML = `
                     <div style="position: relative; width: 100%; aspect-ratio: ${ratio}; background: #1a1a1a; border: 2px solid #444; border-radius: 8px; overflow: hidden; box-shadow: inset 0 0 20px rgba(0,0,0,0.8);">
-                        <!-- Siatka pomocnicza przypominająca ekrany -->
+                        <!-- Siatka pomocnicza -->
                         <div style="position:absolute; width:100%; height:100%; background-image: linear-gradient(rgba(255,255,255,0.05) 1px, transparent 1px), linear-gradient(90deg, rgba(255,255,255,0.05) 1px, transparent 1px); background-size: 10% 10%;"></div>
                         
-                        ${data.images.map(img => {
-                            if (!img.bounds) return ''; 
-                            
-                            // Wyliczamy procentową pozycję okna w stosunku do wszystkich monitorów
+                        ${validImages.map(img => {
+                            // Obliczamy procentową pozycję względem skrajnych krawędzi samych okien
                             const left = ((img.bounds.left - minX) / totalW) * 100;
                             const top = ((img.bounds.top - minY) / totalH) * 100;
                             const width = (img.bounds.width / totalW) * 100;
@@ -1579,7 +1572,7 @@
                         }).join('')}
                     </div>
                     <div style="text-align: center; color: #888; font-size: 11px; margin-top: 15px; line-height: 1.4;">
-                        Ten panel odwzorowuje Twoje fizyczne monitory.<br>Okna są ułożone tak, jak w rzeczywistości.
+                        Widok przycięty wyłącznie do obszaru aktywnych okien.
                     </div>
                 `;
 
