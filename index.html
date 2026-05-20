@@ -5,7 +5,6 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
     <title>Pilot DJ'a - Karaoke</title>
-    <!-- FIREBASE SDK -->
     <script src="https://www.gstatic.com/firebasejs/9.17.1/firebase-app-compat.js"></script>
     <script src="https://www.gstatic.com/firebasejs/9.17.1/firebase-database-compat.js"></script>
     <script src="https://www.gstatic.com/firebasejs/9.17.1/firebase-auth-compat.js"></script>
@@ -372,7 +371,6 @@
 
 <body>
 
-    <!-- EKRAN LOGOWANIA -->
     <div id="loginScreen">
         <div class="login-box">
             <h2>Pilot DJ'a</h2>
@@ -384,7 +382,6 @@
         </div>
     </div>
 
-    <!-- RESZTA PILOTA -->
     <div id="appInterface" style="display: none; flex-direction: column; height: 100%;">
         <div id="topBar" class="top-bar">
             <button id="btnTabOrders" class="top-btn" onclick="toggleTab('orders')" title="Zamówienia">📦</button>
@@ -395,15 +392,12 @@
             <button class="top-btn logout-btn" onclick="logoutDJ()" title="Wyloguj się">🚪</button>
         </div>
 
-        <!-- Wskaźniki statusu poniżej górnego paska -->
         <div style="position: relative; width: 100%; height: 0;">
-            <!-- NOWE: Wskaźnik audio (lewy górny róg) -->
             <div id="musicStatusDot" title="Sprawdzanie audio..."
                 style="position: absolute; top: 10px; left: 15px; font-size: 18px; opacity: 0.3; filter: grayscale(100%); transition: 0.3s; z-index: 10;">
                 🔇
             </div>
 
-            <!-- ISTNIEJĄCE: Wskaźnik połączenia (prawy górny róg) -->
             <div id="connectionStatusDot" title="Sprawdzanie połączenia..."
                 style="position: absolute; top: 14px; right: 15px; width: 12px; height: 12px; border-radius: 50%; background: #f44336; box-shadow: 0 0 8px #f44336; transition: 0.3s; z-index: 10;">
             </div>
@@ -437,7 +431,6 @@
             </div>
         </div>
 
-        <!-- ZAKŁADKA HISTORII -->
         <div id="tabHistory" class="panel" style="max-height: 60dvh; overflow-y: auto;">
             <div id="historyListRemote" style="text-align: left;">
                 <div style="text-align: center; color: #aaa; padding: 20px;">⏳ Czekam na historię...</div>
@@ -525,7 +518,6 @@
             </div>
         </div>
 
-        <!-- PRZYCISKI DOLNE (EKRAN / DŹWIĘKI / PODGLĄD) -->
         <div style="position: fixed; bottom: 15px; left: 15px; right: 15px; display: flex; gap: 8px; z-index: 9999;">
             <button onclick="document.getElementById('overlayModal').style.display='flex'"
                 style="flex:1.2; background: rgba(156, 39, 176, 0.85); border: 1px solid #7b1fa2; color: white; border-radius: 12px; padding: 10px; font-size: 14px; font-weight: bold; cursor: pointer; box-shadow: 0 4px 10px rgba(0,0,0,0.5);">
@@ -544,10 +536,7 @@
                 🔄 Reset
             </button>
         </div>
-    </div> <!-- KONIEC APP INTERFACE -->
-
-    <!-- MODAL EKRANU -->
-    <div id="overlayModal"
+    </div> <div id="overlayModal"
         style="display:none; position:fixed; top:0; left:0; width:100vw; height:100dvh; background:rgba(0,0,0,0.9); z-index:10000; flex-direction:column; align-items:center; justify-content:center; padding:15px; box-sizing:border-box;">
         <div class="modal-box" style="border-color: #9c27b0;">
             <div class="modal-scroll-area">
@@ -675,12 +664,10 @@
         </div>
     </div>
 
-    <!-- MODAL DŹWIĘKÓW -->
     <div id="soundsModal"
         style="display:none; position:fixed; top:0; left:0; width:100vw; height:100dvh; background:rgba(0,0,0,0.9); z-index:10000; flex-direction:column; align-items:center; justify-content:center; padding:15px; box-sizing:border-box;">
         <div class="modal-box" style="border-color: #03dac6;">
 
-            <!-- NOWE: Przełącznik Celu Odtwarzania -->
             <div style="padding: 15px 15px 0 15px; margin-bottom: -5px;">
                 <div
                     style="display: flex; background: #222; border-radius: 8px; border: 1px solid #333; overflow: hidden;">
@@ -738,7 +725,6 @@
         </div>
     </div>
 
-    <!-- MODAL PODGLĄDU EKRANÓW -->
     <div id="screenshotModal"
         style="display:none; position:fixed; top:0; left:0; width:100vw; height:100dvh; background:rgba(0,0,0,0.95); z-index:10000; flex-direction:column; align-items:center; box-sizing:border-box;">
         <div style="width:100%; display:flex; justify-content:space-between; align-items:center; padding: 15px; background: #111; border-bottom: 1px solid #333;">
@@ -747,8 +733,7 @@
         </div>
         <div style="flex:1; width:100%; overflow-y:auto; padding: 15px; box-sizing:border-box;">
             <div id="screenshotGallery" style="display:flex; flex-direction:column; gap:15px; padding-bottom: 30px;">
-                <!-- Zdjęcia pojawią się tutaj -->
-            </div>
+                </div>
         </div>
         <div style="padding: 15px; width: 100%; background: #111; border-top: 1px solid #333; box-sizing:border-box;">
             <button onclick="requestScreenshot()"
@@ -1032,7 +1017,6 @@
                 else if (data.lastAckTs) lastAckFromExt = data.lastAckTs; // Fallback do starego systemu
 
               // --- AKTUALIZACJA WSKAŹNIKA AUDIO (NOWE - ZAPAMIĘTYWANIE STANU) ---
-            // Aktualizujemy znaną wartość TYLKO, gdy Firebase nam ją wyraźnie przysłał
             if (data.hasOwnProperty('isAudioPlaying')) {
                 knownAudioPlaying = data.isAudioPlaying;
             }
@@ -1061,7 +1045,9 @@
 
                 const newTitle = data.currentName || "Brak utworu";
                 if (data.hasOwnProperty('autoPlay')) autoPlayToggle.checked = data.autoPlay;
-                renderOpenTabsList(data.openTabs || []);
+                
+                // UŻYCIE ZBEZPIECZONEJ FUNKCJI DO KART
+                renderOpenTabsList(data.openTabs);
 
                 if (waitingForSongChange) {
                     if (newTitle !== lastSongName) {
@@ -1078,12 +1064,13 @@
                     uiMain.style.display = 'none'; uiSub.textContent = newTitle; uiSub.style.fontSize = '12vw';
                     nextKaraokeContainer.style.display = 'block'; nextKonkursContainer.style.display = 'none'; loteriaContainer.style.display = 'none';
                     uiNext.textContent = data.nextName || "-";
+                    
+                    // BEZPIECZNE POBIERANIE KOLEJKI
                     uiQueue.innerHTML = '';
-                    if (data.queueList) {
-                        data.queueList.forEach(song => {
-                            const div = document.createElement('div'); div.className = 'queue-item'; div.textContent = song; uiQueue.appendChild(div);
-                        });
-                    }
+                    const safeQueue = Array.isArray(data.queueList) ? data.queueList : Object.values(data.queueList || {});
+                    safeQueue.forEach(song => {
+                        const div = document.createElement('div'); div.className = 'queue-item'; div.textContent = song; uiQueue.appendChild(div);
+                    });
                 }
                 else if (data.mode === 'konkurs') {
                     uiMain.style.display = 'block'; uiMain.textContent = data.konkursIndex || "1";
@@ -1095,9 +1082,12 @@
                 else if (data.mode === 'loteria') {
                     uiMain.style.display = 'none'; uiSub.textContent = "LOSOWANIE"; uiSub.style.fontSize = '15vw';
                     nextKaraokeContainer.style.display = 'none'; nextKonkursContainer.style.display = 'none'; loteriaContainer.style.display = 'block';
+                    
+                    // BEZPIECZNE POBIERANIE ZWYCIĘZCÓW
                     const winnersList = document.getElementById('winnersListRemote'); winnersList.innerHTML = '';
-                    if (data.winners && data.winners.length > 0) {
-                        data.winners.forEach(w => {
+                    const safeWinners = Array.isArray(data.winners) ? data.winners : Object.values(data.winners || {});
+                    if (safeWinners.length > 0) {
+                        safeWinners.forEach(w => {
                             winnersList.innerHTML += `
                                 <li style="background: #2c2c2c; margin-bottom: 8px; padding: 12px; border-radius: 8px; border-left: 4px solid #e91e63;">
                                     <div style="font-weight: bold; font-size: 18px; color: #fff;">${w.name}</div>
@@ -1109,12 +1099,13 @@
                     }
                 }
 
-                // Wizja / Okna
+                // Wizja / Okna - BEZPIECZNE POBIERANIE
                 const dynamicTvContainer = document.getElementById('dynamic-tv-buttons');
                 if (dynamicTvContainer) {
                     dynamicTvContainer.innerHTML = '';
-                    if (data.activeTvOverlays && data.activeTvOverlays.length > 0) {
-                        data.activeTvOverlays.forEach(overlayId => {
+                    const safeOverlays = Array.isArray(data.activeTvOverlays) ? data.activeTvOverlays : Object.values(data.activeTvOverlays || {});
+                    if (safeOverlays.length > 0) {
+                        safeOverlays.forEach(overlayId => {
                             const btn = document.createElement('button');
                             btn.style.cssText = "background:#f44336; color:white; border:none; padding:10px; border-radius:6px; font-size:12px; font-weight:bold; cursor:pointer; text-align:left; display:flex; justify-content:space-between;";
                             const labelText = overlayId === 'local_ext_msg' ? 'Wiadomość z panelu DJ-a' : 'Wiadomość z telefonu';
@@ -1127,8 +1118,6 @@
             });
 
             // NOWY PASYWNY MECHANIZM SPRAWDZANIA AKTYWNOŚCI ROZSZERZENIA
-            // Nie musimy już wysyłać komend PING do bazy, tylko sprawdzamy czy rozszerzenie
-            // zaktualizowało timestamp (heartbeat) w ciągu ostatnich np. 12 sekund
             setInterval(() => {
                 const isAlive = (Date.now() - lastAckFromExt) < 12000;
                 const dot = document.getElementById('connectionStatusDot');
@@ -1197,16 +1186,23 @@
             setTimeout(() => { toggleTab(''); }, 700);
         }
 
-        function renderOpenTabsList(tabs) {
+        // ZABEZPIECZONA FUNKCJA RENDEROWANIA KART
+        function renderOpenTabsList(rawTabs) {
             const container = document.getElementById('openTabsContainer');
-            if (!tabs || tabs.length === 0) { container.innerHTML = '<div style="text-align: center; color: #aaa; padding: 20px;">Brak otwartych kart z muzyką.</div>'; return; }
+            // Zabezpieczenie na wypadek, gdyby Firebase zepsuł strukturę tablicy po skasowaniu karty
+            const safeTabs = Array.isArray(rawTabs) ? rawTabs : Object.values(rawTabs || {});
+            
+            if (safeTabs.length === 0) { 
+                container.innerHTML = '<div style="text-align: center; color: #aaa; padding: 20px;">Brak otwartych kart z muzyką.</div>'; 
+                return; 
+            }
             let html = '';
-            tabs.forEach((t, i) => {
+            safeTabs.forEach((t, i) => {
                 html += `
                 <div style="background: #2c2c2c; margin-bottom: 6px; padding: 8px 10px; border-radius: 8px; display:flex; align-items:center; gap: 10px;">
                     <div style="display:flex; flex-direction:column; gap: 3px;">
                         <button class="tiny-btn" onclick="sendCmd('move_tab', {id: ${t.id}, dir: -1})" ${i === 0 ? 'disabled' : ''} title="Wyżej">▲</button>
-                        <button class="tiny-btn" onclick="sendCmd('move_tab', {id: ${t.id}, dir: 1})" ${i === tabs.length - 1 ? 'disabled' : ''} title="Niżej">▼</button>
+                        <button class="tiny-btn" onclick="sendCmd('move_tab', {id: ${t.id}, dir: 1})" ${i === safeTabs.length - 1 ? 'disabled' : ''} title="Niżej">▼</button>
                     </div>
                     <div style="flex:1; word-break: break-word; white-space: normal; font-size:13px; font-weight:bold; line-height: 1.2;">${t.title}</div>
                     <button class="tiny-btn" style="background:#4CAF50; padding:10px 10px; font-size:16px;" onclick="sendCmd('move_tab_top', ${t.id})" ${i === 0 ? 'disabled' : ''} title="Przesuń na samą górę">⏫</button>
@@ -1323,7 +1319,6 @@
                         btn.classList.remove('playing');
                     } else {
                         // ODTWARZANIE
-                        // Najpierw zatrzymaj poprzedni dźwięk
                         if (currentlyPlayingUrl) {
                             if (soundTarget === 'phone') {
                                 localAudio.pause();
@@ -1504,7 +1499,7 @@
         }
 
         // ==========================================
-        // 📸 LOGIKA PODGLĄDU EKRANÓW (ZRZUTY)
+        // 📸 LOGIKA PODGLĄDU EKRANÓW (ZRZUTY) Z BEZPIECZNYM FILTROWANIEM
         // ==========================================
         function requestScreenshot() {
             document.getElementById('screenshotModal').style.display = 'flex';
