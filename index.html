@@ -536,7 +536,8 @@
                 🔄 Reset
             </button>
         </div>
-    </div> <div id="overlayModal"
+    </div>
+    <div id="overlayModal"
         style="display:none; position:fixed; top:0; left:0; width:100vw; height:100dvh; background:rgba(0,0,0,0.9); z-index:10000; flex-direction:column; align-items:center; justify-content:center; padding:15px; box-sizing:border-box;">
         <div class="modal-box" style="border-color: #9c27b0;">
             <div class="modal-scroll-area">
@@ -624,10 +625,9 @@
                                 Dopasuj</button>
                         </div>
                         <div id="posArea"
-                            style="width:100%; max-width:250px; aspect-ratio: 16/9; background:#000; border:1px solid #555; margin:10px auto; position:relative; overflow:hidden; cursor:crosshair; border-radius:4px;"
-                            onclick="setPos(event)">
+                            style="width:100%; max-width:250px; aspect-ratio: 16/9; background:#000; border:1px solid #555; margin:10px auto; position:relative; overflow:hidden; cursor:crosshair; border-radius:4px; touch-action: none;">
                             <div id="posBox"
-                                style="background:rgba(187, 134, 252, 0.4); border:1px solid #bb86fc; position:absolute; pointer-events:none; width:100%; height:100%; top:0; left:0;">
+                                style="background:rgba(187, 134, 252, 0.4); border:1px solid #bb86fc; box-sizing: border-box; position:absolute; pointer-events:none; width:100%; height:100%; top:0; left:0;">
                             </div>
                         </div>
                     </div>
@@ -727,13 +727,15 @@
 
     <div id="screenshotModal"
         style="display:none; position:fixed; top:0; left:0; width:100vw; height:100dvh; background:rgba(0,0,0,0.95); z-index:10000; flex-direction:column; align-items:center; box-sizing:border-box;">
-        <div style="width:100%; display:flex; justify-content:space-between; align-items:center; padding: 15px; background: #111; border-bottom: 1px solid #333;">
+        <div
+            style="width:100%; display:flex; justify-content:space-between; align-items:center; padding: 15px; background: #111; border-bottom: 1px solid #333;">
             <h3 style="margin:0; color:#2196F3; font-size: 18px;">📸 Aktywne Ekrany</h3>
-            <button onclick="document.getElementById('screenshotModal').style.display='none'" style="background:none; border:none; color:white; font-size:24px; cursor:pointer;">✖</button>
+            <button onclick="document.getElementById('screenshotModal').style.display='none'"
+                style="background:none; border:none; color:white; font-size:24px; cursor:pointer;">✖</button>
         </div>
         <div style="flex:1; width:100%; overflow-y:auto; padding: 15px; box-sizing:border-box;">
             <div id="screenshotGallery" style="display:flex; flex-direction:column; gap:15px; padding-bottom: 30px;">
-                </div>
+            </div>
         </div>
         <div style="padding: 15px; width: 100%; background: #111; border-top: 1px solid #333; box-sizing:border-box;">
             <button onclick="requestScreenshot()"
@@ -1016,27 +1018,27 @@
                 if (data.lastHeartbeatTs) lastAckFromExt = data.lastHeartbeatTs; // Nowy system
                 else if (data.lastAckTs) lastAckFromExt = data.lastAckTs; // Fallback do starego systemu
 
-              // --- AKTUALIZACJA WSKAŹNIKA AUDIO (NOWE - ZAPAMIĘTYWANIE STANU) ---
-            if (data.hasOwnProperty('isAudioPlaying')) {
-                knownAudioPlaying = data.isAudioPlaying;
-            }
-
-            const musicDot = document.getElementById('musicStatusDot');
-            if (musicDot) {
-                if (knownAudioPlaying) {
-                    musicDot.textContent = '🎵';
-                    musicDot.style.filter = 'none';
-                    musicDot.style.opacity = '1';
-                    musicDot.style.textShadow = '0 0 10px #03dac6';
-                    musicDot.title = 'Muzyka gra!';
-                } else {
-                    musicDot.textContent = '🔇';
-                    musicDot.style.filter = 'grayscale(100%)';
-                    musicDot.style.opacity = '0.3';
-                    musicDot.style.textShadow = 'none';
-                    musicDot.title = 'Cisza...';
+                // --- AKTUALIZACJA WSKAŹNIKA AUDIO (NOWE - ZAPAMIĘTYWANIE STANU) ---
+                if (data.hasOwnProperty('isAudioPlaying')) {
+                    knownAudioPlaying = data.isAudioPlaying;
                 }
-            }
+
+                const musicDot = document.getElementById('musicStatusDot');
+                if (musicDot) {
+                    if (knownAudioPlaying) {
+                        musicDot.textContent = '🎵';
+                        musicDot.style.filter = 'none';
+                        musicDot.style.opacity = '1';
+                        musicDot.style.textShadow = '0 0 10px #03dac6';
+                        musicDot.title = 'Muzyka gra!';
+                    } else {
+                        musicDot.textContent = '🔇';
+                        musicDot.style.filter = 'grayscale(100%)';
+                        musicDot.style.opacity = '0.3';
+                        musicDot.style.textShadow = 'none';
+                        musicDot.title = 'Cisza...';
+                    }
+                }
 
                 if (data.mode && currentModeInternal !== data.mode) {
                     currentModeInternal = data.mode;
@@ -1045,7 +1047,7 @@
 
                 const newTitle = data.currentName || "Brak utworu";
                 if (data.hasOwnProperty('autoPlay')) autoPlayToggle.checked = data.autoPlay;
-                
+
                 // UŻYCIE ZBEZPIECZONEJ FUNKCJI DO KART
                 renderOpenTabsList(data.openTabs);
 
@@ -1064,7 +1066,7 @@
                     uiMain.style.display = 'none'; uiSub.textContent = newTitle; uiSub.style.fontSize = '12vw';
                     nextKaraokeContainer.style.display = 'block'; nextKonkursContainer.style.display = 'none'; loteriaContainer.style.display = 'none';
                     uiNext.textContent = data.nextName || "-";
-                    
+
                     // BEZPIECZNE POBIERANIE KOLEJKI
                     uiQueue.innerHTML = '';
                     const safeQueue = Array.isArray(data.queueList) ? data.queueList : Object.values(data.queueList || {});
@@ -1082,7 +1084,7 @@
                 else if (data.mode === 'loteria') {
                     uiMain.style.display = 'none'; uiSub.textContent = "LOSOWANIE"; uiSub.style.fontSize = '15vw';
                     nextKaraokeContainer.style.display = 'none'; nextKonkursContainer.style.display = 'none'; loteriaContainer.style.display = 'block';
-                    
+
                     // BEZPIECZNE POBIERANIE ZWYCIĘZCÓW
                     const winnersList = document.getElementById('winnersListRemote'); winnersList.innerHTML = '';
                     const safeWinners = Array.isArray(data.winners) ? data.winners : Object.values(data.winners || {});
@@ -1191,10 +1193,10 @@
             const container = document.getElementById('openTabsContainer');
             // Zabezpieczenie na wypadek, gdyby Firebase zepsuł strukturę tablicy po skasowaniu karty
             const safeTabs = Array.isArray(rawTabs) ? rawTabs : Object.values(rawTabs || {});
-            
-            if (safeTabs.length === 0) { 
-                container.innerHTML = '<div style="text-align: center; color: #aaa; padding: 20px;">Brak otwartych kart z muzyką.</div>'; 
-                return; 
+
+            if (safeTabs.length === 0) {
+                container.innerHTML = '<div style="text-align: center; color: #aaa; padding: 20px;">Brak otwartych kart z muzyką.</div>';
+                return;
             }
             let html = '';
             safeTabs.forEach((t, i) => {
@@ -1388,13 +1390,47 @@
             box.style.left = relX + "%"; box.style.top = relY + "%";
         }
 
-        function setPos(e) {
-            const area = document.getElementById('posArea'); const rect = area.getBoundingClientRect();
-            const w = document.getElementById('winW').value; const h = document.getElementById('winH').value;
-            let x = ((e.clientX - rect.left) / rect.width) * 100; let y = ((e.clientY - rect.top) / rect.height) * 100;
-            relX = Math.max(0, Math.min(100 - w, x - w / 2)); relY = Math.max(0, Math.min(100 - h, y - h / 2));
+       // --- NOWY MECHANIZM PŁYNNEGO PRZECIĄGANIA OKIENKA NA PILOCIE ---
+        let isDraggingBox = false;
+        const posArea = document.getElementById('posArea');
+
+        function handlePosEvent(e) {
+            if (!posArea) return;
+            const rect = posArea.getBoundingClientRect();
+            let w = parseFloat(document.getElementById('winW').value);
+            let h = parseFloat(document.getElementById('winH').value);
+            
+            let clientX = e.clientX;
+            let clientY = e.clientY;
+            
+            // Obsługa dotyku na smartfonach
+            if (e.touches && e.touches.length > 0) {
+                clientX = e.touches[0].clientX;
+                clientY = e.touches[0].clientY;
+            } else if (e.changedTouches && e.changedTouches.length > 0) {
+                clientX = e.changedTouches[0].clientX;
+                clientY = e.changedTouches[0].clientY;
+            }
+
+            let x = ((clientX - rect.left) / rect.width) * 100;
+            let y = ((clientY - rect.top) / rect.height) * 100;
+
+            relX = Math.max(0, Math.min(100 - w, x - (w / 2)));
+            relY = Math.max(0, Math.min(100 - h, y - (h / 2)));
             updateWinPreview();
         }
+
+        // Eventy dla myszki (PC)
+        posArea.addEventListener('mousedown', (e) => { isDraggingBox = true; handlePosEvent(e); });
+        window.addEventListener('mousemove', (e) => { if (isDraggingBox) handlePosEvent(e); });
+        window.addEventListener('mouseup', () => { isDraggingBox = false; });
+
+        // Eventy dla palca (Telefon)
+        posArea.addEventListener('touchstart', (e) => { isDraggingBox = true; handlePosEvent(e); }, {passive: false});
+        window.addEventListener('touchmove', (e) => { 
+            if (isDraggingBox) { e.preventDefault(); handlePosEvent(e); } 
+        }, {passive: false});
+        window.addEventListener('touchend', () => { isDraggingBox = false; });
 
         function autoFitWindow() {
             const wInput = document.getElementById('winW'); const hInput = document.getElementById('winH');
@@ -1514,15 +1550,15 @@
             if (navigator.vibrate) navigator.vibrate(30);
         }
 
-       // Nasłuchiwanie na paczkę ze zrzutami z Firebase i budowanie "Czystego Podzielonego Pulpitu"
+        // Nasłuchiwanie na paczkę ze zrzutami z Firebase i budowanie "Czystego Podzielonego Pulpitu"
         db.ref('remote_screenshot').on('value', snap => {
             const data = snap.val();
             if (!data || !data.images) return;
-            
+
             const gallery = document.getElementById('screenshotGallery');
             if (gallery && document.getElementById('screenshotModal').style.display === 'flex') {
                 gallery.innerHTML = '';
-                
+
                 const validImages = data.images.filter(img => img.bounds);
 
                 if (validImages.length === 0) {
@@ -1532,7 +1568,7 @@
 
                 // Pobieranie informacji o monitorach lub tworzenie awaryjnego obszaru
                 const displays = data.displays || [{
-                    id: "Wirtualny", 
+                    id: "Wirtualny",
                     bounds: {
                         left: Math.min(...validImages.map(img => img.bounds.left)),
                         top: Math.min(...validImages.map(img => img.bounds.top)),
@@ -1547,7 +1583,7 @@
                 let workspaceHTML = '';
 
                 displays.forEach((display, index) => {
-                    
+
                     // Filtrowanie okien dla danego monitora na podstawie ich środka geometrycznego
                     const displayImages = validImages.filter(img => {
                         const centerX = img.bounds.left + (img.bounds.width / 2);
@@ -1573,22 +1609,22 @@
                             
                             <div style="position: relative; width: 100%; aspect-ratio: ${ratio}; background: #000; border: 1px solid #444; overflow: hidden;">
                                 ${displayImages.map(img => {
-                                    // Pozycja okna wewnątrz wybranego monitora
-                                    const left = ((img.bounds.left - display.bounds.left) / display.bounds.width) * 100;
-                                    const top = ((img.bounds.top - display.bounds.top) / display.bounds.height) * 100;
-                                    const width = (img.bounds.width / display.bounds.width) * 100;
-                                    const height = (img.bounds.height / display.bounds.height) * 100;
-                                    
-                                    const zIdx = img.zIndex || 1;
+                        // Pozycja okna wewnątrz wybranego monitora
+                        const left = ((img.bounds.left - display.bounds.left) / display.bounds.width) * 100;
+                        const top = ((img.bounds.top - display.bounds.top) / display.bounds.height) * 100;
+                        const width = (img.bounds.width / display.bounds.width) * 100;
+                        const height = (img.bounds.height / display.bounds.height) * 100;
 
-                                    return `
+                        const zIdx = img.zIndex || 1;
+
+                        return `
                                     <div style="position: absolute; left: ${left}%; top: ${top}%; width: ${width}%; height: ${height}%; box-sizing: border-box; border: 1px solid #03dac6; background: #111; overflow: hidden; z-index: ${zIdx}; box-shadow: 0 4px 15px rgba(0,0,0,0.8);">
                                         <div style="width: 100%; height: 100%; position: relative;">
                                             <img src="${img.dataUrl}" style="position: absolute; top: 0; left: 0; width: 100%; height: 100%; object-fit: fill;">
                                         </div>
                                     </div>
                                     `;
-                                }).join('')}
+                    }).join('')}
                             </div>
                         </div>
                     `;
@@ -1606,4 +1642,5 @@
         });
     </script>
 </body>
+
 </html>
